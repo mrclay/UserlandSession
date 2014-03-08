@@ -11,7 +11,7 @@ native sessions except access to the session data is only via the single object 
 .. code-block:: php
 
     // create a files-based session, directory sniffed from session.save_path
-    $session = UserlandSession\Session::factory();
+    $session = \UserlandSession\Session::factory();
     $session->start();
 
     // write data ($session->data is a plain old array property)

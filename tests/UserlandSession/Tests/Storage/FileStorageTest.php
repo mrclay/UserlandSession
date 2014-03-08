@@ -6,6 +6,7 @@ use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 use UserlandSession\Session;
 use UserlandSession\Storage\FileStorage;
+use UserlandSession\Testing;
 
 class FileStorageTest extends \PHPUnit_Framework_TestCase {
 
@@ -20,11 +21,16 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
     protected $fs;
 
     function setUp() {
+        Testing::reset();
         $this->root = vfsStream::setup();
         $this->fs = new FileStorage(Session::DEFAULT_SESSION_NAME, array(
             'path' => vfsStream::url('root'),
             'flock' => false,
         ));
+    }
+
+    function tearDown() {
+        Testing::reset();
     }
 
     function testDefaults() {
@@ -68,18 +74,25 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
     }
 
     function testGc() {
-        $this->fs->write('foo', 'bar');
-        $this->fs->gc(30);
-        $this->assertSame('bar', $this->fs->read('foo'));
+        $this->fs->write('60mago', 'bar');
+        $this->fs->write('30mago', 'bar');
+        $this->fs->write('now', 'bar');
 
-        $filename = Session::DEFAULT_SESSION_NAME . '_foo';
-        $file = $this->root->getChild($filename);
+        $this->touchSessionFile('60mago', -3600);
+        $this->touchSessionFile('30mago', -1800);
 
-        touch($file->url(), 20);
-        clearstatcache();
+        $this->fs->gc(3000);
+        $this->assertFalse($this->fs->read('60mago'));
+        $this->assertSame('bar', $this->fs->read('30mago'));
+        $this->assertSame('bar', $this->fs->read('now'));
 
-        $this->fs->gc(30);
-        $this->assertFalse($this->fs->read('foo'));
+        $this->fs->gc(900);
+        $this->assertFalse($this->fs->read('30mago'));
+        $this->assertSame('bar', $this->fs->read('now'));
+
+        Testing::getInstance()->timeOffset = 30;
+        $this->fs->gc(0);
+        $this->assertFalse($this->fs->read('now'));
     }
 
     /**
@@ -87,11 +100,18 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
      */
     function testUnwritablePath() {
         $this->root->chown(vfsStream::OWNER_USER_2);
-        $this->root->chmod(0600);
+        $this->root->chmod(0700);
 
         new FileStorage(Session::DEFAULT_SESSION_NAME, array(
             'path' => vfsStream::url('root'),
             'flock' => false,
         ));
+    }
+
+    protected function touchSessionFile($id, $time = 0) {
+        $time = ($time > 0) ? $time : (\time() + $time);
+        $filename = $this->fs->getPath() . "/" . $this->fs->getName() . "_$id";
+        touch($filename, $time);
+        clearstatcache();
     }
 }

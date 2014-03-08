@@ -140,10 +140,10 @@ class Session
      */
     public function get($key, $default = null)
     {
-        if (!$this->id) {
+        if (!$this->id || !array_key_exists($key, $this->data)) {
             return $default;
         }
-        return array_key_exists($key, $this->data) ? $this->data[$key] : $default;
+        return $this->data[$key];
     }
 
     /**
@@ -173,17 +173,12 @@ class Session
      * Users should consider using factory() to prevent cookie/storage name collisions.
      *
      * @param StorageInterface $storage
-     * @param Http $http
      *
      * @throws Exception
      */
-    public function __construct(StorageInterface $storage, Http $http = null)
+    public function __construct(StorageInterface $storage)
     {
         $this->storage = $storage;
-        if (!$http) {
-            $http = new Http();
-        }
-        $this->http = $http;
         $this->name = $storage->getName();
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $this->name)) {
             throw new Exception('UserlandSession name may contain only a-zA-Z_');
@@ -247,8 +242,11 @@ class Session
      */
     public function getIdFromCookie()
     {
-        $id = $this->http->getCookie($this->name);
-        if (empty($id) || !$this->storage->idIsValid($id)) {
+        if (empty($_COOKIE[$this->name])) {
+            return false;
+        }
+        $id = $_COOKIE[$this->name];
+        if (!is_string($id) || !$this->storage->idIsValid($id)) {
             return false;
         }
         return $id;
@@ -292,7 +290,7 @@ class Session
      */
     public function start()
     {
-        if ($this->http->headers_sent() || $this->id) {
+        if (headers_sent() || $this->id) {
             return false;
         }
         $this->data = array();
@@ -329,23 +327,23 @@ class Session
         $ce = $this->cache_expire;
         switch ($this->cache_limiter) {
             case self::CACHE_LIMITER_PUBLIC:
-                $this->http->header('Expires: ' . self::formatAsGmt(time() + $ce));
-                $this->http->header("Cache-Control: public, max-age=$ce");
-                $this->http->header('Last-Modified: ' . $lastModified);
+                header('Expires: ' . self::formatAsGmt(time() + $ce));
+                header("Cache-Control: public, max-age=$ce");
+                header('Last-Modified: ' . $lastModified);
                 break;
             case self::CACHE_LIMITER_PRIVATE_NO_EXPIRE:
-                $this->http->header("Cache-Control: private, max-age=$ce, pre-check=$ce");
-                $this->http->header('Last-Modified: ' . $lastModified);
+                header("Cache-Control: private, max-age=$ce, pre-check=$ce");
+                header('Last-Modified: ' . $lastModified);
                 break;
             case self::CACHE_LIMITER_PRIVATE:
-                $this->http->header('Expires: Thu, 19 Nov 1981 08:52:00 GMT');
-                $this->http->header("Cache-Control: private, max-age=$ce, pre-check=$ce");
-                $this->http->header('Last-Modified: ' . $lastModified);
+                header('Expires: Thu, 19 Nov 1981 08:52:00 GMT');
+                header("Cache-Control: private, max-age=$ce, pre-check=$ce");
+                header('Last-Modified: ' . $lastModified);
                 break;
             case self::CACHE_LIMITER_NOCACHE:
-                $this->http->header('Expires: Thu, 19 Nov 1981 08:52:00 GMT');
-                $this->http->header('Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
-                $this->http->header('Pragma: no-cache');
+                header('Expires: Thu, 19 Nov 1981 08:52:00 GMT');
+                header('Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
+                header('Pragma: no-cache');
                 break;
             case self::CACHE_LIMITER_NONE:
                 // send no cache headers, please
@@ -408,7 +406,7 @@ class Session
      */
     public function regenerateId($deleteOldSession = false)
     {
-        if ($this->http->headers_sent() || !$this->id) {
+        if (headers_sent() || !$this->id) {
             return false;
         }
         $this->removeCookie();
@@ -428,7 +426,7 @@ class Session
      */
     public function removeCookie()
     {
-        return $this->http->setcookie(
+        return setcookie(
             $this->name,
             '',
             time() - 86400,
@@ -458,7 +456,7 @@ class Session
     {
         $serialization = $this->storage->read($this->id);
         if (is_string($serialization)) {
-            $this->data = unserialize($serialization);
+            $this->data = @unserialize($serialization);
             if (is_array($this->data)) {
                 return true;
             }
@@ -485,7 +483,7 @@ class Session
     protected function setCookie($name, $id)
     {
         $expire = $this->cookie_lifetime ? time() + (int)$this->cookie_lifetime : 0;
-        return $this->http->setcookie(
+        return setcookie(
             $name,
             $id,
             $expire,
@@ -500,13 +498,6 @@ class Session
      * @var StorageInterface
      */
     protected $storage;
-
-    /**
-     * PHP's global header state
-     *
-     * @var Http
-     */
-    protected $http;
 
     /**
      * Active session ID, or empty if inactive
