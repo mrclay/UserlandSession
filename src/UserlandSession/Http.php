@@ -3,7 +3,7 @@
 namespace UserlandSession;
 
 /**
- * Simple wrapper for PHP global state functions (untestables)
+ * Simple wrapper for PHP untestables
  */
 class Http
 {
@@ -40,5 +40,15 @@ class Http
     public function headers_sent(&$file = null, &$line = null)
     {
         return headers_sent($file, $line);
+    }
+
+    /**
+     * @param string $name
+     * @param mixed $default
+     * @return string|null
+     */
+    public function getCookie($name, $default = null)
+    {
+        return isset($_COOKIE[$name]) ? $_COOKIE[$name] : $default;
     }
 }

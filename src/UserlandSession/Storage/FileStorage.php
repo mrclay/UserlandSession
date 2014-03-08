@@ -16,7 +16,7 @@ class FileStorage implements StorageInterface
      *    'flock' : lock files for read/write (true by default)
      *    'path' : save path for files
      *
-     * @throws \Exception
+     * @throws \InvalidArgumentException
      */
     public function __construct($name = Session::DEFAULT_SESSION_NAME, array $options = array())
     {
@@ -25,16 +25,16 @@ class FileStorage implements StorageInterface
         $path = empty($options['path']) ? null : $options['path'];
         if (is_string($path)) {
             $path = rtrim(preg_replace('/^\\d+;/', '', $path), '/\\');
-            if ($this->_isValidPath($path)) {
+            if ($this->isValidPath($path)) {
                 $this->path = $path;
             } else {
-                throw new \Exception('Path is not valid or is not writable: ' . $path);
+                throw new \InvalidArgumentException('Path is not valid or is not writable: ' . $path);
             }
         }
         if (null === $this->path) {
             // hashed directory tree not supported
             $path = rtrim(preg_replace('/^\\d+;/', '', ini_get('session.save_path')), '/\\');
-            if ($this->_isValidPath($path)) {
+            if ($this->isValidPath($path)) {
                 $this->path = $path;
             } else {
                 $this->path = rtrim(sys_get_temp_dir(), '/\\');
@@ -81,7 +81,7 @@ class FileStorage implements StorageInterface
      */
     public function read($id)
     {
-        $file = $this->_getFilePath($id);
+        $file = $this->getFilePath($id);
         if (is_file($file) && is_readable($file)) {
             if ($this->locking) {
                 $fp = fopen($file, 'rb');
@@ -104,7 +104,7 @@ class FileStorage implements StorageInterface
      */
     public function write($id, $data)
     {
-        $file = $this->_getFilePath($id);
+        $file = $this->getFilePath($id);
         if (is_file($file) && !is_writable($file)) {
             return false;
         }
@@ -118,7 +118,7 @@ class FileStorage implements StorageInterface
      */
     public function destroy($id)
     {
-        $file = $this->_getFilePath($id);
+        $file = $this->getFilePath($id);
         if (is_file($file) && is_writable($file)) {
             return unlink($file);
         }
@@ -158,12 +158,12 @@ class FileStorage implements StorageInterface
         return preg_match('/^[a-zA-Z0-9\\-\\_]+$/', $id);
     }
 
-    protected function _isValidPath($path)
+    protected function isValidPath($path)
     {
         return $path && is_dir($path) && is_writable($path);
     }
 
-    protected function _getFilePath($id)
+    protected function getFilePath($id)
     {
         return $this->path . DIRECTORY_SEPARATOR . $this->name . '_' . $id;
     }

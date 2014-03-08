@@ -1,13 +1,12 @@
 <?php
 
-require_once __DIR__ . '/../autoload.php';
-
 // store data in directory specified by ini_get('session.save_path')
 $sess = (require __DIR__ . '/../scripts/get_file_session.php');
 /* @var \UserlandSession\Session $sess */
 
 // // or specify the path
 //
+//require_once __DIR__ . '/../autoload.php';
 //$storage = new \UserlandSession\Storage\FileStorage('ULSESS', array('path' => '/tmp'));
 //$sess = new \UserlandSession\Session($storage);
 //

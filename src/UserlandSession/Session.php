@@ -247,13 +247,11 @@ class Session
      */
     public function getIdFromCookie()
     {
-        if (!empty($_COOKIE[$this->name])) {
-            $id = $_COOKIE[$this->name];
-            if (is_string($id) && $this->storage->idIsValid($id)) {
-                return $id;
-            }
+        $id = $this->http->getCookie($this->name);
+        if (empty($id) || !$this->storage->idIsValid($id)) {
+            return false;
         }
-        return false;
+        return $id;
     }
 
     /**
