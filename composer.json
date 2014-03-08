@@ -1,0 +1,24 @@
+{
+    "name": "mrclay/userland-session",
+    "type": "library",
+    "description": "Provides a an HTTP cookie-based session in plain PHP, allowing concurrent use with existing native sessions.",
+    "keywords": ["session", "HTTP", "SSO", "single sign-on"],
+    "homepage": "https://github.com/mrclay/UserlandSession",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Steve Clay",
+            "homepage": "http://www.mrclay.org/",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0"
+    },
+    "require-dev": {
+        "mikey179/vfsStream": "1.3.*@dev"
+    },
+    "autoload": {
+        "psr-0": {"UserlandSession\\": "src/"}
+    }
+}

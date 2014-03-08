@@ -1,1 +1,0 @@
-Goodbye, fair user. <a href="./">Come back</a>
