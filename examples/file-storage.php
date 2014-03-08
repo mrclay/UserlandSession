@@ -14,9 +14,9 @@ $sess = (require __DIR__ . '/../scripts/get_file_session.php');
 $sess->start();
 
 if (isset($sess->data['i'])) {
-	$sess->data['i']++;
+    $sess->data['i']++;
 } else {
-	$sess->data['i'] = 0;
+    $sess->data['i'] = 0;
 }
 
 header('Content-Type: text/html;charset=utf-8');

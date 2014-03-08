@@ -7,7 +7,7 @@ $storage = new \UserlandSession\Storage\PdoStorage('ULSESS', array(
     'dsn' => "mysql:host=localhost;dbname=ulsess;charset=UTF8",
     'username' => 'user_ulsess',
     'password' => '7vvv3SDjh2LLRPZ6',
-	'table' => 'userland_sessions',
+    'table' => 'userland_sessions',
 ));
 
 // // ...or you can pass it in.
@@ -47,7 +47,7 @@ $examples = array(
 
 $report = $sess->data['i'];
 
-if (! isset($sess->data['examples'])) {
+if (!isset($sess->data['examples'])) {
     $sess->data['examples'] = $examples;
 } else {
     $report .= "<br>";
