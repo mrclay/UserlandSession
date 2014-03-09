@@ -24,7 +24,7 @@ use UserlandSession\Storage\StorageInterface;
  *
  * Also a tiny session fixation vulnerability has been prevented in start().
  *
- * @see http://svn.php.net/viewvc/php/php-src/trunk/ext/session/session.c?view=markup
+ * @see https://github.com/php/php-src/blob/master/ext/session/session.c
  */
 class Session
 {
@@ -137,13 +137,15 @@ class Session
      * @param mixed $default
      *
      * @return mixed
+     *
+     * @throws Exception
      */
     public function get($key, $default = null)
     {
-        if (!$this->id || !array_key_exists($key, $this->data)) {
-            return $default;
+        if (!$this->id) {
+            throw new Exception('Cannot use get without active session.');
         }
-        return $this->data[$key];
+        return array_key_exists($key, $this->data) ? $this->data[$key] : $default;
     }
 
     /**
@@ -153,11 +155,13 @@ class Session
      * @param mixed $value
      *
      * @return bool returns true if the session has been started
+     *
+     * @throws Exception
      */
     public function set($key, $value = null)
     {
         if (!$this->id) {
-            return false;
+            throw new Exception('Cannot use set without active session.');
         }
         if (is_array($key)) {
             foreach ($key as $k => $value) {
@@ -297,7 +301,6 @@ class Session
         if ($this->requestedId) {
             $this->setCookie($this->name, $this->requestedId);
             $this->id = $this->requestedId;
-            $this->requestedId = null;
         } else {
             $id = $this->getIdFromCookie();
             $this->id = $id ? $id : IdGenerator::generateSessionId($this->idLength);
@@ -312,14 +315,20 @@ class Session
             $this->storage->gc($this->gc_maxlifetime);
         }
 
-        // try data fetch
-        if (!$this->loadData()) {
-            // unlike the native PHP session, we don't let users choose their own
-            // session IDs if there's no data. This prevents session fixation through 
-            // cookies (very hard for an attacker, but why leave this door open?).
-            $this->id = IdGenerator::generateSessionId($this->idLength);
-            $this->setCookie($this->name, $this->id);
+        if ($this->requestedId) {
+            // don't require data to exist
+        } else {
+            // try data fetch
+            if (!$this->loadData()) {
+                // unlike the native PHP session, we don't let users choose their own
+                // session IDs if there's no data. This prevents session fixation through
+                // cookies (very hard for an attacker, but why leave this door open?).
+                $this->id = IdGenerator::generateSessionId($this->idLength);
+                $this->setCookie($this->name, $this->id);
+            }
         }
+        $this->requestedId = null;
+
         // send optional cache limiter
         // this is actual session behavior rather than what's documented.
         $lastModified = self::formatAsGmt(filemtime($_SERVER['SCRIPT_FILENAME']));
@@ -365,6 +374,7 @@ class Session
         }
         $this->storage->close();
         $this->id = '';
+        $this->data = null;
         return true;
     }
 
@@ -409,7 +419,6 @@ class Session
         if (headers_sent() || !$this->id) {
             return false;
         }
-        $this->removeCookie();
         $oldId = $this->id;
         $this->id = IdGenerator::generateSessionId($this->idLength);
         $this->setCookie($this->name, $this->id);
