@@ -4,13 +4,17 @@ php:
  - 5.3
  - 5.4
  - 5.5
+ - hhvm
 
 branches:
   only:
     - master
 
-script:
- - phpunit
+before_script:
+  - composer self-update
+  - composer install
+
+script: phpunit
 
 notifications:
   email:
