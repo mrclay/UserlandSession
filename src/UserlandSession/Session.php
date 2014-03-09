@@ -369,13 +369,15 @@ class Session
      */
     public function writeClose()
     {
-        if (!$this->id || !$this->saveData()) {
+        if (!$this->id) {
             return false;
         }
+        // allow session to be closed, even if write fails. Otherwise destructor will try again.
+        $wasSaved = $this->saveData();
         $this->storage->close();
         $this->id = '';
         $this->data = null;
-        return true;
+        return $wasSaved;
     }
 
     public function __destruct()
