@@ -36,6 +36,8 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     }
 
     function tearDown() {
+        // necessary to avoid warnings due to vfsStream
+        $this->sess = null;
         Testing::reset();
     }
 
