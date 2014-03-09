@@ -41,6 +41,32 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         Testing::reset();
     }
 
+    function testFactory() {
+        $names = array('ULSESS', 'ULSESS1', 'ULSESS2');
+        $instances = array();
+
+        foreach ($names as $name) {
+            $sess = Session::factory();
+            $this->assertInstanceOf('UserlandSession\\Session', $sess);
+            $this->assertInstanceOf('UserlandSession\\Storage\\FileStorage', $sess->getStorage());
+            $this->assertSame($name, $sess->getStorage()->getName());
+            $instances[] = $sess;
+        }
+
+        $instances = array_unique($instances, SORT_REGULAR);
+        $this->assertSame(count($names), count($instances));
+
+        $this->setExpectedException('UserlandSession\\Exception');
+        Session::factory(new FileStorage('ULSESS'));
+    }
+
+    /**
+     * @expectedException \UserlandSession\Exception
+     */
+    function testFactoryWithNativeSessionCollision() {
+        Session::factory(new FileStorage(ini_get('session.name')));
+    }
+
     function testNotStarted() {
         $this->assertSame('', $this->sess->id());
         $this->assertFalse($this->sess->writeClose());
