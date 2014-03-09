@@ -1,7 +1,8 @@
-.. image:: https://travis-ci.org/mrclay/UserlandSession.png?branch=master   :target: https://travis-ci.org/mrclay/UserlandSession
-
 UserlandSession
 ===============
+
+.. image:: https://travis-ci.org/mrclay/UserlandSession.png?branch=master
+  :target: https://travis-ci.org/mrclay/UserlandSession
 
 UserlandSession is an HTTP cookie-based session implemented in plain PHP, allowing it to be used concurrently with--and
 completely independent of--existing native sessions. This makes it handy for bridging session state across
