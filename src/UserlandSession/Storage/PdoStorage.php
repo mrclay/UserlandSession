@@ -23,7 +23,7 @@ class PdoStorage implements StorageInterface
      *   'pdo' : a PDO connection. If not given, the following options can be given and
      *           PdoStorage will make a new PDO connection when needed:
      *
-     *   'dns' : argument for PDO::__construct
+     *   'dsn' : argument for PDO::__construct
      *   'username' : argument for PDO::__construct
      *   'password' : argument for PDO::__construct
      *   'driver_options' : argument for PDO::__construct
