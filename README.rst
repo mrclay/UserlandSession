@@ -1,3 +1,5 @@
+.. image:: https://travis-ci.org/mrclay/UserlandSession.png?branch=master   :target: https://travis-ci.org/mrclay/UserlandSession
+
 UserlandSession
 ===============
 
