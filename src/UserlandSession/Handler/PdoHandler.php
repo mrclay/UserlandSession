@@ -1,8 +1,6 @@
 <?php
 
-namespace UserlandSession\Storage;
-
-use UserlandSession\Session;
+namespace UserlandSession\Handler;
 
 /**
  * PDO session storage.
@@ -12,16 +10,15 @@ use UserlandSession\Session;
  * A separate table is required for each storage object you use because the garbage collector does not care
  * about the session name.
  */
-class PdoStorage implements StorageInterface
+class PdoHandler implements \SessionHandlerInterface
 {
     /**
-     * @param string $name session name (to be used in cookie)
-     * @param array $options for the storage container
+     * @param array $options Storage container options
      *
      *   'table' : name of the session data table (required)
      *
      *   'pdo' : a PDO connection. If not given, the following options can be given and
-     *           PdoStorage will make a new PDO connection when needed:
+     *           PdoHandler will make a new PDO connection when needed:
      *
      *   'dsn' : argument for PDO::__construct
      *   'username' : argument for PDO::__construct
@@ -30,11 +27,11 @@ class PdoStorage implements StorageInterface
      *
      * @throws \InvalidArgumentException
      */
-    public function __construct($name = Session::DEFAULT_SESSION_NAME, array $options = array())
+    public function __construct(array $options)
     {
-        $this->name = $name;
         $this->options = array_merge(
             array(
+                'dsn' => null,
                 'username' => null,
                 'password' => null,
                 'driver_options' => null,
@@ -49,30 +46,28 @@ class PdoStorage implements StorageInterface
         }
         if ($this->options['pdo']) {
             if (!$this->options['pdo'] instanceof \PDO) {
-                throw new \InvalidArgumentException('The option "pdo" must be a PDO object if given.');
+                throw new \InvalidArgumentException('The option "pdo" must be a PDO object, if given.');
             }
             $this->pdo = $this->options['pdo'];
             unset($this->options['pdo']);
+        } else {
+            if ($this->options['dsn'] === null
+                    || $this->options['username'] === null
+                    || $this->options['password'] === null) {
+                throw new \InvalidArgumentException('If PDO not given, you must give dsn, username, and password.');
+            }
         }
     }
 
     /**
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
+     * @param string $save_path
+     * @param string $name
+     *
      * @return bool
      */
-    public function open()
+    public function open($save_path, $name)
     {
-        $o = $this->options;
-        if (!$this->pdo) {
-            $this->pdo = new \PDO($o['dsn'], $o['username'], $o['password'], $o['driver_options']);
-        }
+        $this->getPdo();
         return true;
     }
 
@@ -149,18 +144,24 @@ class PdoStorage implements StorageInterface
     }
 
     /**
-     * @param string $id
-     * @return bool
+     * @return string
      */
-    public function idIsValid($id)
+    public function getTable()
     {
-        return preg_match('/^[a-zA-Z0-9\\-\\_]+$/', $id);
+        return $this->options['table'];
     }
 
     /**
-     * @var string
+     * @return \PDO
      */
-    protected $name;
+    public function getPdo()
+    {
+        $o = $this->options;
+        if (!$this->pdo) {
+            $this->pdo = new \PDO($o['dsn'], $o['username'], $o['password'], $o['driver_options']);
+        }
+        return $this->pdo;
+    }
 
     /**
      * @var array

@@ -1,17 +1,21 @@
 <?php
 /**
  * This script returns a session object with storage in files in the directory
- * specified by ini_get('session.save_path').
+ * specified by session_save_path().
  *
  * @return \UserlandSession\Session
  */
+
+use UserlandSession\Handler\FileHandler;
+use UserlandSession\Session;
+use UserlandSession\SessionBuilder;
 
 require_once __DIR__ . '/../autoload.php';
 
 return call_user_func(function () {
     static $session;
     if (!$session) {
-        $session = \UserlandSession\Session::factory();
+        $session = SessionBuilder::instance()->build();
     }
     return $session;
 });

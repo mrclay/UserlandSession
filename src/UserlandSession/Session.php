@@ -2,25 +2,14 @@
 
 namespace UserlandSession;
 
-use UserlandSession\Storage\FileStorage;
-use UserlandSession\Storage\StorageInterface;
-
 /**
  * A PHP emulation of native session behavior. Other than HTTP IO (header() and
  * setcookie(), there's no global state in this implementation; you can have an active
  * session beside another instance or beside the native session.
  *
- * Only id has a get/setter function. The other options are public properties.
- *
- * There's no set_handler/module because one has to inject a storage handler into the
- * constructor. This also moved the save_path option to the Files handler.
- *
- * Session name is set in the storage handler, which prevents the user from mistakenly
- * re-using a storage handler for multiple sessions.
- *
- * The biggest usage difference is that you can set cache_limiter = '', meaning no headers
- * (other than Set-Cookie) will be sent at start(). This may be useful if you need to use
- * this class in tandem with native sessions.
+ * Note: You can set cache_limiter = '', meaning no headers (other than Set-Cookie) will
+ * be sent at start(). This may be useful if you need to use this class in tandem with
+ * native sessions.
  *
  * Also a tiny session fixation vulnerability has been prevented in start().
  *
@@ -34,6 +23,9 @@ class Session
     const CACHE_LIMITER_PRIVATE = 'private';
     const CACHE_LIMITER_NOCACHE = 'nocache';
 
+    /**
+     * The default session name if not provided
+     */
     const DEFAULT_SESSION_NAME = 'ULSESS';
 
     /**
@@ -93,13 +85,6 @@ class Session
     public $gc_divisor = 100;
 
     /**
-     * Length of session IDs generated
-     *
-     * @var int
-     */
-    public $idLength = 40;
-
-    /**
      * Determines what headers are sent when the session is started. If you're using UserlandSession
      * alongside existing sessions, you may want to set this to CACHE_LIMITER_NONE.
      *
@@ -123,12 +108,11 @@ class Session
     public $data = null;
 
     /**
-     * @return StorageInterface
+     * Length of session IDs generated
+     *
+     * @var int
      */
-    public function getStorage()
-    {
-        return $this->storage;
-    }
+    public $idLength = 40;
 
     /**
      * Get a value from the session
@@ -174,73 +158,79 @@ class Session
     }
 
     /**
-     * Users should consider using factory() to prevent cookie/storage name collisions.
+     * Create a session.
      *
-     * @param StorageInterface $storage
+     * @param \SessionHandlerInterface $handler The storage handler
+     * @param string $name Session name.
+     * @param string $save_path Path sent to the handler. If not specified, session_save_path() is used.
      *
-     * @throws Exception
+     * @throws \InvalidArgumentException
      */
-    public function __construct(StorageInterface $storage)
+    public function __construct(\SessionHandlerInterface $handler, $name = Session::DEFAULT_SESSION_NAME, $save_path = '')
     {
-        $this->storage = $storage;
-        $this->name = $storage->getName();
-        if (!preg_match('/^[a-zA-Z0-9_]+$/', $this->name)) {
-            throw new Exception('UserlandSession name may contain only a-zA-Z_');
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $name)) {
+            throw new \InvalidArgumentException('name may contain only a-zA-Z_');
         }
+        $this->name = $name;
+        if ($handler instanceof \SessionHandler) {
+            // SessionHandler's operation depends on the native session
+            throw new \InvalidArgumentException('Cannot use native SessionHandler. Use UserlandSession\Handler\FileHandler');
+        }
+        $this->handler = $handler;
+        $this->savePath = $save_path;
     }
 
     /**
-     * More safely create a session. This function will only let you create sessions with
-     * names that are unique (case-insensitively) to avoid creating cookie/storage
-     * collisions. It also forbids using a name that matches the global setting session.name.
+     * Get the session ID, or request an ID to be used when the session begins.
      *
-     * @param StorageInterface $storage (will use Files if not specified)
-     *
-     * @return Session
-     *
-     * @throws Exception
-     */
-    public static function factory(StorageInterface $storage = null)
-    {
-        static $activeNames = array();
-        static $i = 0;
-
-        if (null === $storage) {
-            $name = self::DEFAULT_SESSION_NAME;
-            if ($i) {
-                $name .= $i;
-            }
-            $storage = new FileStorage($name);
-            $i++;
-        }
-        $activeNames[strtoupper(ini_get('session.name'))] = true;
-        $name = strtoupper($storage->getName());
-        if (isset($activeNames[$name])) {
-            throw new Exception('UserlandSession name already used');
-        }
-        $activeNames[$name] = true;
-
-        return new self($storage);
-    }
-
-    /**
-     * Get the session ID, or set an ID to be used when the session
-     * begins. When setting, the format is validated by the storage handler.
-     *
-     * @param string $id
+     * @param string $id Requested session id. May contain only [a-zA-Z0-9-_]
      *
      * @return string ('' means there is no active session)
+     *
+     * @throws \InvalidArgumentException|Exception
      */
     public function id($id = null)
     {
-        if (!$this->id && is_string($id) && $this->storage->idIsValid($id)) {
+        if ($id) {
+            if (!$this->isValidId($id)) {
+                throw new \InvalidArgumentException('$id may contain only [a-zA-Z0-9-_]');
+            }
+            if ($this->id) {
+                throw new Exception('Cannot set id while session is active');
+            }
             $this->requestedId = $id;
         }
         return $this->id;
     }
 
     /**
-     * Get a session ID from the client
+     * Get the session name.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * @return \SessionHandlerInterface
+     */
+    public function getHandler()
+    {
+        return $this->handler;
+    }
+
+    /**
+     * @return string
+     */
+    public function getSavePath()
+    {
+        return $this->savePath;
+    }
+
+    /**
+     * Get a session ID from the client. (Do not use unless data exists for this ID!)
      *
      * @return string
      */
@@ -250,7 +240,7 @@ class Session
             return false;
         }
         $id = $_COOKIE[$this->name];
-        if (!is_string($id) || !$this->storage->idIsValid($id)) {
+        if (!is_string($id) || !$this->isValidId($id)) {
             return false;
         }
         return $id;
@@ -266,11 +256,11 @@ class Session
     public function persistedDataExists($id)
     {
         if (!$this->id) {
-            $this->storage->open();
+            $this->handler->open($this->savePath, $this->name);
         }
-        $ret = (bool)$this->storage->read($id);
+        $ret = (bool)$this->handler->read($id);
         if (!$this->id) {
-            $this->storage->close();
+            $this->handler->close();
         }
         return $ret;
     }
@@ -307,12 +297,12 @@ class Session
         }
 
         // open storage (reqd for GC)
-        $this->storage->open();
+        $this->handler->open($this->savePath, $this->name);
 
         // should we call GC?
         $rand = mt_rand(1, $this->gc_divisor);
         if ($rand <= $this->gc_probability) {
-            $this->storage->gc($this->gc_maxlifetime);
+            $this->handler->gc($this->gc_maxlifetime);
         }
 
         if ($this->requestedId) {
@@ -374,7 +364,7 @@ class Session
         }
         // allow session to be closed, even if write fails. Otherwise destructor will try again.
         $wasSaved = $this->saveData();
-        $this->storage->close();
+        $this->handler->close();
         $this->id = '';
         $this->data = null;
         return $wasSaved;
@@ -400,8 +390,8 @@ class Session
             if ($removeCookie) {
                 $this->removeCookie();
             }
-            $this->storage->destroy($this->id);
-            $this->storage->close();
+            $this->handler->destroy($this->id);
+            $this->handler->close();
             $this->id = '';
             return true;
         }
@@ -425,7 +415,7 @@ class Session
         $this->id = IdGenerator::generateSessionId($this->idLength);
         $this->setCookie($this->name, $this->id);
         if ($oldId && $deleteOldSession) {
-            $this->storage->destroy($oldId);
+            $this->handler->destroy($oldId);
         }
         return true;
     }
@@ -465,7 +455,7 @@ class Session
      */
     protected function loadData()
     {
-        $serialization = $this->storage->read($this->id);
+        $serialization = $this->handler->read($this->id);
         if (is_string($serialization)) {
             $this->data = @unserialize($serialization);
             if (is_array($this->data)) {
@@ -482,7 +472,7 @@ class Session
     protected function saveData()
     {
         $strData = serialize($this->data);
-        return $this->storage->write($this->id, $strData);
+        return $this->handler->write($this->id, $strData);
     }
 
     /**
@@ -506,9 +496,19 @@ class Session
     }
 
     /**
-     * @var StorageInterface
+     * @param string $id
+     *
+     * @return bool
      */
-    protected $storage;
+    protected function isValidId($id)
+    {
+        return (bool)preg_match('/^[a-zA-Z0-9\\-\\_]+$/', $id);
+    }
+
+    /**
+     * @var \SessionHandlerInterface
+     */
+    protected $handler;
 
     /**
      * Active session ID, or empty if inactive
@@ -530,4 +530,11 @@ class Session
      * @var string
      */
     protected $name;
+
+    /**
+     * Path sent to the handler when opening
+     *
+     * @var string
+     */
+    protected $savePath;
 }

@@ -4,17 +4,18 @@ UserlandSession
 .. image:: https://travis-ci.org/mrclay/UserlandSession.png?branch=master
   :target: https://travis-ci.org/mrclay/UserlandSession
 
-UserlandSession is an HTTP cookie-based session implemented in plain PHP, allowing it to be used concurrently with--and
-completely independent of--existing native sessions. This makes it handy for bridging session state across
-multiple PHP apps with incompatible sessions.
+UserlandSession is an HTTP cookie-based session components implemented in plain PHP, allowing it to be used
+concurrently with--and completely independent of--existing native sessions. This makes it handy for bridging
+session state across multiple PHP apps with incompatible sessions.
 
-The components are loosely-coupled and introduce no global state (except headers), and the API is similar to
-native sessions except access to the session data is only via the single object instead of a superglobal.
+- Loosely-coupled components that introduce no global state (except headers)
+- Uses PHP's `SessionHandlerInterface`, so you can re-use existing 3rd-party handlers, even in PHP 5.3!
+- Session data is only accessible via the object instead of a global
 
 .. code-block:: php
 
     // create a files-based session, directory sniffed from session.save_path
-    $session = \UserlandSession\Session::factory();
+    $session = \UserlandSession\SessionBuilder::instance()->build();
     $session->start();
 
     // use public $session->data array property...
@@ -25,39 +26,39 @@ native sessions except access to the session data is only via the single object 
 
     $session->writeClose(); // ...or let destructor do this
 
-Storage
--------
+Handlers
+--------
 
-Adapters `FileStorage` and `PdoStorage` are included.
+The save handler interface is PHP's `SessionHandlerInterface` (provided for PHP 5.3), and handlers
+`FileHandler` and `PdoHandler` are included.
 
-The storage interface is currently similar but not identical to PHP 5.4's `SessionHandlerInterface`. I decided
-that it was preferable for the storage object to hold the session name. I may decide to change this to share
-the same interface as native sessions.
+Feel free to use your own save handler class, or use these as handlers for native sessions!
 
 Creating a Session
 ------------------
 
-Easy ways to get a files-based session with directory sniffed from session.save_path:
+Easy ways to get a files-based session:
 
 .. code-block:: php
 
-    // from script
+    // from script (save path sniffed from session.save_path)
     $session = (require 'path/to/UserlandSession/scripts/get_file_session.php');
 
-    // using factory
-    $session = Session::factory();
+    // using builder (here we set the session name to MYSESS)
+    $session = SessionBuilder::instance()
+        ->setSavePath('/tmp')
+        ->setName('MYSESS')
+        ->build();
 
 File Storage Options
 --------------------
 
 .. code-block:: php
 
-    // creates storage for a session with name ULSESS
-    $storage = new FileStorage('ULSESS', array(
-        'path' => '/storage/location',
-        'flock' => false, // turn off file locking
-    ));
-    $session = new Session($storage);
+    // turn off file locking
+    $session = SessionBuilder::instance()
+        ->setFileLocking(false)
+        ->build();
 
 Using PDO
 ---------
@@ -65,21 +66,20 @@ Using PDO
 .. code-block:: php
 
     // pre-existing PDO connection
-    $storage = new PdoStorage('ULSESS', array(
-        'table' => 'userland_sessions',
-        'pdo' => $myPdoConnection,
-    ));
-    $session = new Session($storage);
+    $session = SessionBuilder::instance()
+        ->setPdo($myConnection)
+        ->setTable('userland_sessions')
+        ->build();
 
     // or if you want it to connect for you when needed:
-    $storage = new PdoStorage('ULSESS', array(
-        'table' => 'userland_sessions',
-        'dsn' => "mysql:host=localhost;dbname=ulsess;charset=UTF8",
-        'username' => 'username',
-        'password' => 'password1',
-    ));
-    $session = new Session($storage);
-
+    $session = SessionBuilder::instance()
+        ->setDbCredentials(array(
+            'dsn' => 'mysql:host=localhost;dbname=ulsess;charset=UTF8',
+            'username' => 'fred',
+            'password' => 'password1',
+        ))
+        ->setTable('userland_sessions')
+        ->build();
 
 Extras
 ------
