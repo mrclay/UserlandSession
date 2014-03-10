@@ -4,7 +4,6 @@ namespace UserlandSession\Tests\Storage;
 
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
-use UserlandSession\Session;
 use UserlandSession\Storage\FileStorage;
 use UserlandSession\Testing;
 
@@ -23,7 +22,7 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
     function setUp() {
         Testing::reset();
         $this->root = vfsStream::setup();
-        $this->fs = new FileStorage(Session::DEFAULT_SESSION_NAME, array(
+        $this->fs = new FileStorage('name', array(
             'path' => vfsStream::url('root'),
             'flock' => false,
         ));
@@ -37,7 +36,7 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
         ini_set('session.save_path', '5;/tmp/');
         $obj = new FileStorage();
 
-        $this->assertSame(Session::DEFAULT_SESSION_NAME, $obj->getName());
+        $this->assertSame('name', $obj->getName());
         $this->assertSame('/tmp', $obj->getPath());
     }
 
@@ -55,7 +54,7 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
 
     function testReadWrite() {
         $this->assertFalse($this->fs->read('foo'));
-        $filename = Session::DEFAULT_SESSION_NAME . '_foo';
+        $filename = 'name_foo';
         $this->assertFalse($this->root->hasChild($filename));
 
         $this->fs->write('foo', 'bar');
@@ -65,7 +64,7 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
 
     function testDestroy() {
         $this->fs->write('foo', 'bar');
-        $filename = Session::DEFAULT_SESSION_NAME . '_foo';
+        $filename = 'name_foo';
 
         $this->assertFalse($this->fs->destroy('goo'));
         $this->assertTrue($this->fs->destroy('foo'));
@@ -102,7 +101,7 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
         $this->root->chown(vfsStream::OWNER_USER_2);
         $this->root->chmod(0700);
 
-        new FileStorage(Session::DEFAULT_SESSION_NAME, array(
+        new FileStorage('name', array(
             'path' => vfsStream::url('root'),
             'flock' => false,
         ));
