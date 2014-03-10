@@ -12,7 +12,15 @@ class FileHandler implements \SessionHandlerInterface
      */
     public function __construct($lockFiles = true)
     {
-        $this->locking = $lockFiles;
+        $this->setLocking($lockFiles);
+    }
+
+    /**
+     * @param bool $lockFiles Lock files for read/write (true by default)
+     */
+    public function setLocking($lockFiles = true)
+    {
+        $this->locking = (bool)$lockFiles;
     }
 
     /**

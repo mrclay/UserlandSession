@@ -8,13 +8,14 @@ UserlandSession is an HTTP cookie-based session implemented in plain PHP, allowi
 completely independent of--existing native sessions. This makes it handy for bridging session state across
 multiple PHP apps with incompatible sessions.
 
-The components are loosely-coupled and introduce no global state (except headers), and the API is similar to
-native sessions except access to the session data is only via the single object instead of a superglobal.
+- Loosely-coupled components that introduce no global state (except headers)
+- Uses PHP 5.4's `SessionHandlerInterface`, so you can re-use existing 3rd-party handlers, even in PHP 5.3!
+- Session data is only accessible via the object instead of a global
 
 .. code-block:: php
 
     // create a files-based session, directory sniffed from session.save_path
-    $session = \UserlandSession\Session::factory();
+    $session = \UserlandSession\SessionBuilder::instance()->build();
     $session->start();
 
     // use public $session->data array property...

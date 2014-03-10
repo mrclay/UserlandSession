@@ -2,6 +2,7 @@
 
 use UserlandSession\Session;
 use UserlandSession\Handler\FileHandler;
+use UserlandSession\SessionBuilder;
 
 // store data in directory specified by ini_get('session.save_path')
 $sess = (require __DIR__ . '/../scripts/get_file_session.php');
@@ -10,8 +11,8 @@ $sess = (require __DIR__ . '/../scripts/get_file_session.php');
 // // or specify the path
 //
 //require_once __DIR__ . '/../autoload.php';
-//$storage = new FileHandler();
-//$sess = new Session($storage, Session::DEFAULT_SESSION_NAME, '/tmp');
+//
+//$sess = SessionBuilder::instance()->setSavePath('/tmp')->build();
 
 $sess->start();
 

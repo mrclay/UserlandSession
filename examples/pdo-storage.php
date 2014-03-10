@@ -2,27 +2,24 @@
 
 use UserlandSession\Session;
 use UserlandSession\Handler\PdoHandler;
+use UserlandSession\SessionBuilder;
 
 require __DIR__ . '/../autoload.php';
 
 // you can have the storage class open the PDO connection...
 $params = (require __DIR__ . '/../tests/db_params.php');
-$storage = new PdoHandler(array(
-    'table' => $params['table'],
-    'dsn' => "{$params['driver']}:host={$params['host']};dbname={$params['dbname']};charset=UTF8",
-    'username' => $params['username'],
-    'password' => $params['password'],
-));
+
+$sess = SessionBuilder::instance()
+    ->setDbCredentials($params)
+    ->setTable($params['table'])
+    ->build();
 
 // // ...or you can pass it in.
-//
-//$storage = new \UserlandSession\Storage\PdoHandler(array(
-//	'table' => 'userland_sessions',
-//	'pdo' => $pdo,
-//));
-//
 
-$sess = new Session($storage);
+//$sess = SessionBuilder::instance()
+//    ->setPdo($pdo)
+//    ->setTable('userland_sessions')
+//    ->build();
 
 $sess->start();
 
