@@ -67,10 +67,7 @@ class PdoHandler implements \SessionHandlerInterface
      */
     public function open($save_path, $name)
     {
-        $o = $this->options;
-        if (!$this->pdo) {
-            $this->pdo = new \PDO($o['dsn'], $o['username'], $o['password'], $o['driver_options']);
-        }
+        $this->getPdo();
         return true;
     }
 
@@ -144,6 +141,26 @@ class PdoHandler implements \SessionHandlerInterface
             WHERE `time` < " . (int)(time() - $maxLifetime) . "
         ";
         return (bool)$this->pdo->exec($sql);
+    }
+
+    /**
+     * @return string
+     */
+    public function getTable()
+    {
+        return $this->options['table'];
+    }
+
+    /**
+     * @return \PDO
+     */
+    public function getPdo()
+    {
+        $o = $this->options;
+        if (!$this->pdo) {
+            $this->pdo = new \PDO($o['dsn'], $o['username'], $o['password'], $o['driver_options']);
+        }
+        return $this->pdo;
     }
 
     /**

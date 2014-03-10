@@ -5,11 +5,14 @@ namespace UserlandSession;
 use UserlandSession\Handler\FileHandler;
 use UserlandSession\Handler\PdoHandler;
 
+/**
+ * Fluent API for creating sessions
+ */
 class SessionBuilder
 {
     protected $name = Session::DEFAULT_SESSION_NAME;
     protected $savePath;
-    protected $storage;
+    protected $handler;
     protected $locking = true;
     protected $table;
     protected $pdo;
@@ -31,6 +34,7 @@ class SessionBuilder
 
     /**
      * @param string $path
+     *
      * @return $this
      */
     public function setSavePath($path)
@@ -49,6 +53,7 @@ class SessionBuilder
 
     /**
      * @param bool $locking
+     *
      * @return $this
      */
     public function setFileLocking($locking = true)
@@ -59,6 +64,7 @@ class SessionBuilder
 
     /**
      * @param string $name
+     *
      * @return $this
      */
     public function setName($name)
@@ -69,6 +75,7 @@ class SessionBuilder
 
     /**
      * @param string $table
+     *
      * @return $this
      */
     public function setTable($table)
@@ -79,6 +86,7 @@ class SessionBuilder
 
     /**
      * @param \PDO $pdo
+     *
      * @return $this
      */
     public function setPdo(\PDO $pdo)
@@ -89,6 +97,7 @@ class SessionBuilder
 
     /**
      * @param string[] $creds
+     *
      * @return $this
      */
     public function setDbCredentials(array $creds)
@@ -98,11 +107,26 @@ class SessionBuilder
     }
 
     /**
+     * @param \SessionHandlerInterface $handler
+     *
+     * @return $this
+     */
+    public function setHandler(\SessionHandlerInterface $handler)
+    {
+        $this->handler = $handler;
+        return $this;
+    }
+
+    /**
+     * Create a new session with the appropriate storage handler
+     *
      * @return Session
      */
     public function build()
     {
-        if ($this->pdo || $this->dbCredentials) {
+        if ($this->handler) {
+            $handler = $this->handler;
+        } elseif ($this->pdo || $this->dbCredentials) {
             $options = $this->dbCredentials;
             $options['table'] = $this->table;
             if ($this->pdo) {

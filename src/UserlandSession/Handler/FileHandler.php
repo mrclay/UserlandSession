@@ -24,6 +24,14 @@ class FileHandler implements \SessionHandlerInterface
     }
 
     /**
+     * @return bool
+     */
+    public function getLocking()
+    {
+        return $this->locking;
+    }
+
+    /**
      * @param string $save_path
      *   '/path', 'N;/path', or 'N;octal-mode;/path
      *
