@@ -7,7 +7,7 @@ use UserlandSession\Session;
 /**
  * PDO session storage.
  *
- * This uses the schema described in utils/pdo_schema.sql.
+ * This uses the schema described in schema/mysql.sql.
  *
  * A separate table is required for each storage object you use because the garbage collector does not care
  * about the session name.
