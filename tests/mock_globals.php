@@ -54,7 +54,7 @@ namespace UserlandSession {
     }
 }
 
-namespace UserlandSession\Storage {
+namespace UserlandSession\Handler {
     function time()
     {
         return \UserlandSession\time();

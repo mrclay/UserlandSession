@@ -1,69 +1,52 @@
 <?php
 
-namespace UserlandSession\Storage;
-
-use UserlandSession\Session;
+namespace UserlandSession\Handler;
 
 /**
  * File session storage.
  */
-class FileStorage implements StorageInterface
+class FileHandler implements \SessionHandlerInterface
 {
+    /**
+     * @param bool $lockFiles Lock files for read/write (true by default)
+     */
+    public function __construct($lockFiles = true)
+    {
+        $this->locking = $lockFiles;
+    }
 
     /**
-     * @param string $name session name (to be used in cookie)
-     * @param array $options for the storage container
-     *    'flock' : lock files for read/write (true by default)
-     *    'path' : save path for files
+     * @param string $save_path
+     * @param string $name
+     *
+     * @return bool
      *
      * @throws \InvalidArgumentException
      */
-    public function __construct($name = Session::DEFAULT_SESSION_NAME, array $options = array())
+    public function open($save_path, $name)
     {
         $this->name = $name;
-        $this->locking = isset($options['flock']) ? (bool)$options['flock'] : true;
-        $path = empty($options['path']) ? null : $options['path'];
-        if (is_string($path)) {
-            $path = rtrim(preg_replace('/^\\d+;/', '', $path), '/\\');
-            if ($this->isValidPath($path)) {
-                $this->path = $path;
-            } else {
-                throw new \InvalidArgumentException('Path is not valid or is not writable: ' . $path);
-            }
+
+        if (!$save_path) {
+            throw new \InvalidArgumentException("Invalid argument \$save_path '$save_path'");
         }
-        if (null === $this->path) {
-            // hashed directory tree not supported
-            $path = rtrim(preg_replace('/^\\d+;/', '', ini_get('session.save_path')), '/\\');
-            if ($this->isValidPath($path)) {
-                $this->path = $path;
-            } else {
-                $this->path = rtrim(sys_get_temp_dir(), '/\\');
-            }
+
+        $count = substr_count($save_path, ';');
+        if ($count > 2) {
+            throw new \InvalidArgumentException("Invalid argument \$save_path '$save_path'");
         }
-    }
 
-    /**
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
+        if ($count) {
+            $pieces = explode(';', $save_path);
+            $save_path = array_pop($pieces);
+        }
 
-    /**
-     * Get path for storing session files
-     * @return string
-     */
-    public function getPath()
-    {
-        return $this->path;
-    }
+        if (!is_dir($save_path)) {
+            mkdir($save_path, 0777, true);
+        }
 
-    /**
-     * @return bool
-     */
-    public function open()
-    {
+        $this->path = rtrim($save_path, '/\\');
+
         return true;
     }
 
@@ -147,20 +130,6 @@ class FileStorage implements StorageInterface
             }
         }
         $d->close();
-    }
-
-    /**
-     * @param string $id
-     * @return bool
-     */
-    public function idIsValid($id)
-    {
-        return preg_match('/^[a-zA-Z0-9\\-\\_]+$/', $id);
-    }
-
-    protected function isValidPath($path)
-    {
-        return $path && is_dir($path) && is_writable($path);
     }
 
     protected function getFilePath($id)

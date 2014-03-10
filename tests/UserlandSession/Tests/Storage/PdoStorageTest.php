@@ -2,13 +2,13 @@
 
 namespace UserlandSession\Tests\Storage;
 
-use UserlandSession\Storage\PdoStorage;
+use UserlandSession\Handler\PdoHandler;
 use UserlandSession\Testing;
 
 class PdoStorageTest extends \PHPUnit_Framework_TestCase {
 
     /**
-     * @var PdoStorage
+     * @var PdoHandler
      */
     protected $storage;
 
@@ -33,7 +33,7 @@ class PdoStorageTest extends \PHPUnit_Framework_TestCase {
         $password = $p['password'];
         $this->pdo = new \PDO($dsn, $username, $password);
 
-        $this->storage = new PdoStorage('name', array(
+        $this->storage = new PdoHandler('name', array(
             'table' => $this->params['table'],
             'pdo' => $this->pdo,
         ));
@@ -52,7 +52,7 @@ class PdoStorageTest extends \PHPUnit_Framework_TestCase {
 
     function testParamsConstructor() {
         $p = $this->params;
-        $storage = new PdoStorage('name', array(
+        $storage = new PdoHandler('name', array(
             'table' => $p['table'],
             'dsn' => "{$p['driver']}:host={$p['host']};dbname={$p['dbname']};charset=UTF8",
             'username' => $p['username'],
@@ -67,7 +67,7 @@ class PdoStorageTest extends \PHPUnit_Framework_TestCase {
      * @expectedException \InvalidArgumentException
      */
     function testMissingTable() {
-        new PdoStorage('name', array(
+        new PdoHandler('name', array(
             'pdo' => $this->pdo,
         ));
     }
@@ -76,7 +76,7 @@ class PdoStorageTest extends \PHPUnit_Framework_TestCase {
      * @expectedException \InvalidArgumentException
      */
     function testBadPdoType() {
-        new PdoStorage('name', array(
+        new PdoHandler('name', array(
             'table' => $this->params['table'],
             'pdo' => 'not a PDO',
         ));

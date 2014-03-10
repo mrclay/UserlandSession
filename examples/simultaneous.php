@@ -3,8 +3,10 @@
  * Two Shibalike sessions and one native
  */
 
+die('TODO adapt to new API');
+
 use UserlandSession\Session;
-use UserlandSession\Storage\FileStorage;
+use UserlandSession\Handler\FileHandler;
 
 require __DIR__ . '/../autoload.php';
 
@@ -19,8 +21,8 @@ $sess1->cache_limiter = Session::CACHE_LIMITER_NONE;
 $sess1->gc_divisor = 3;
 $sess1->start();
 
-$sess1Storage = $sess1->getStorage();
-/* @var FileStorage $sess1Storage */
+$sess1Storage = $sess1->getHandler();
+/* @var FileHandler $sess1Storage */
 
 $msgs['sess1']['name'] = $sess1Storage->getName();
 $msgs['sess1']['path'] = $sess1Storage->getPath();
@@ -47,8 +49,8 @@ $sess2 = Session::factory();
 $sess2->cache_limiter = Session::CACHE_LIMITER_NONE;
 $sess2->start();
 
-$sess2Storage = $sess2->getStorage();
-/* @var FileStorage $sess2Storage */
+$sess2Storage = $sess2->getHandler();
+/* @var FileHandler $sess2Storage */
 
 $msgs['sess2']['name'] = $sess2Storage->getName();
 $msgs['sess2']['path'] = $sess2Storage->getPath();

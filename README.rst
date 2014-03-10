@@ -28,7 +28,7 @@ native sessions except access to the session data is only via the single object 
 Storage
 -------
 
-Adapters `FileStorage` and `PdoStorage` are included.
+Adapters `FileHandler` and `PdoHandler` are included.
 
 The storage interface is currently similar but not identical to PHP 5.4's `SessionHandlerInterface`. I decided
 that it was preferable for the storage object to hold the session name. I may decide to change this to share
@@ -53,7 +53,7 @@ File Storage Options
 .. code-block:: php
 
     // creates storage for a session with name ULSESS
-    $storage = new FileStorage('ULSESS', array(
+    $storage = new FileHandler('ULSESS', array(
         'path' => '/storage/location',
         'flock' => false, // turn off file locking
     ));
@@ -65,14 +65,14 @@ Using PDO
 .. code-block:: php
 
     // pre-existing PDO connection
-    $storage = new PdoStorage('ULSESS', array(
+    $storage = new PdoHandler('ULSESS', array(
         'table' => 'userland_sessions',
         'pdo' => $myPdoConnection,
     ));
     $session = new Session($storage);
 
     // or if you want it to connect for you when needed:
-    $storage = new PdoStorage('ULSESS', array(
+    $storage = new PdoHandler('ULSESS', array(
         'table' => 'userland_sessions',
         'dsn' => "mysql:host=localhost;dbname=ulsess;charset=UTF8",
         'username' => 'username',

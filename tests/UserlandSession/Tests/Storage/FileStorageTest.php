@@ -5,7 +5,7 @@ namespace UserlandSession\Tests\Storage;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 use UserlandSession\Session;
-use UserlandSession\Storage\FileStorage;
+use UserlandSession\Handler\FileHandler;
 use UserlandSession\Testing;
 
 class FileStorageTest extends \PHPUnit_Framework_TestCase {
@@ -16,14 +16,14 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
     protected $root;
 
     /**
-     * @var FileStorage
+     * @var FileHandler
      */
     protected $storage;
 
     function setUp() {
         Testing::reset();
         $this->root = vfsStream::setup();
-        $this->storage = new FileStorage('name', array(
+        $this->storage = new FileHandler('name', array(
             'path' => vfsStream::url('root'),
             'flock' => false,
         ));
@@ -35,7 +35,7 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
 
     function testDefaults() {
         ini_set('session.save_path', '5;/tmp/');
-        $obj = new FileStorage();
+        $obj = new FileHandler();
 
         $this->assertSame(Session::DEFAULT_SESSION_NAME, $obj->getName());
         $this->assertSame('/tmp', $obj->getPath());
@@ -102,7 +102,7 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
         $this->root->chown(vfsStream::OWNER_USER_2);
         $this->root->chmod(0700);
 
-        new FileStorage('name', array(
+        new FileHandler('name', array(
             'path' => vfsStream::url('root'),
             'flock' => false,
         ));
