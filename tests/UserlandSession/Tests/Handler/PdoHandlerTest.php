@@ -5,12 +5,12 @@ namespace UserlandSession\Tests\Storage;
 use UserlandSession\Handler\PdoHandler;
 use UserlandSession\Testing;
 
-class PdoStorageTest extends \PHPUnit_Framework_TestCase {
+class PdoHandlerTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @var PdoHandler
      */
-    protected $storage;
+    protected $handler;
 
     /**
      * @var string[]
@@ -33,10 +33,11 @@ class PdoStorageTest extends \PHPUnit_Framework_TestCase {
         $password = $p['password'];
         $this->pdo = new \PDO($dsn, $username, $password);
 
-        $this->storage = new PdoHandler('name', array(
+        $this->handler = new PdoHandler(array(
             'table' => $this->params['table'],
             'pdo' => $this->pdo,
         ));
+        $this->handler->open(null, 'name');
     }
 
     function tearDown() {
@@ -44,21 +45,15 @@ class PdoStorageTest extends \PHPUnit_Framework_TestCase {
         Testing::reset();
     }
 
-    function testPdoConstructor() {
-        $this->storage->open();
-        $this->storage->write('foo', 'bar');
-        $this->assertSame('bar', $this->storage->read('foo'));
-    }
-
     function testParamsConstructor() {
         $p = $this->params;
-        $storage = new PdoHandler('name', array(
+        $storage = new PdoHandler(array(
             'table' => $p['table'],
             'dsn' => "{$p['driver']}:host={$p['host']};dbname={$p['dbname']};charset=UTF8",
             'username' => $p['username'],
             'password' => $p['password'],
         ));
-        $storage->open();
+        $storage->open(null, 'name');
         $storage->write('foo', 'bar');
         $this->assertSame('bar', $storage->read('foo'));
     }
@@ -67,7 +62,7 @@ class PdoStorageTest extends \PHPUnit_Framework_TestCase {
      * @expectedException \InvalidArgumentException
      */
     function testMissingTable() {
-        new PdoHandler('name', array(
+        new PdoHandler(array(
             'pdo' => $this->pdo,
         ));
     }
@@ -76,66 +71,62 @@ class PdoStorageTest extends \PHPUnit_Framework_TestCase {
      * @expectedException \InvalidArgumentException
      */
     function testBadPdoType() {
-        new PdoHandler('name', array(
+        new PdoHandler(array(
             'table' => $this->params['table'],
             'pdo' => 'not a PDO',
         ));
     }
 
     function testOpen() {
-        $this->assertTrue($this->storage->open());
+        $this->handler->close();
+        $this->assertTrue($this->handler->open(null, 'name'));
     }
 
     function testClose() {
-        $this->assertTrue($this->storage->close());
+        $this->assertTrue($this->handler->close());
     }
 
     function testReadWrite() {
-        $this->storage->open();
-        $this->assertFalse($this->storage->read('foo'));
+        $this->assertFalse($this->handler->read('foo'));
 
-        $this->storage->write('foo', 'bar');
-        $this->assertSame('bar', $this->storage->read('foo'));
+        $this->handler->write('foo', 'bar');
+        $this->assertSame('bar', $this->handler->read('foo'));
     }
 
     function testDestroy() {
-        $this->storage->open();
-        $this->storage->write('foo', 'bar');
+        $this->handler->write('foo', 'bar');
 
-        $this->assertFalse($this->storage->destroy('goo'));
-        $this->assertTrue($this->storage->destroy('foo'));
-        $this->assertFalse($this->storage->read('foo'));
+        $this->assertFalse($this->handler->destroy('goo'));
+        $this->assertTrue($this->handler->destroy('foo'));
+        $this->assertFalse($this->handler->read('foo'));
     }
 
     function testGc() {
-        $this->storage->open();
-
         Testing::getInstance()->timeOffset = -3600;
-        $this->storage->write('60mago', 'bar');
+        $this->handler->write('60mago', 'bar');
 
         Testing::getInstance()->timeOffset = -1800;
-        $this->storage->write('30mago', 'bar');
+        $this->handler->write('30mago', 'bar');
 
         Testing::getInstance()->timeOffset = 0;
-        $this->storage->write('now', 'bar');
+        $this->handler->write('now', 'bar');
 
-        $this->storage->gc(3000);
-        $this->assertFalse($this->storage->read('60mago'));
-        $this->assertSame('bar', $this->storage->read('30mago'));
-        $this->assertSame('bar', $this->storage->read('now'));
+        $this->handler->gc(3000);
+        $this->assertFalse($this->handler->read('60mago'));
+        $this->assertSame('bar', $this->handler->read('30mago'));
+        $this->assertSame('bar', $this->handler->read('now'));
 
-        $this->storage->gc(900);
-        $this->assertFalse($this->storage->read('30mago'));
-        $this->assertSame('bar', $this->storage->read('now'));
+        $this->handler->gc(900);
+        $this->assertFalse($this->handler->read('30mago'));
+        $this->assertSame('bar', $this->handler->read('now'));
 
         Testing::getInstance()->timeOffset = 30;
-        $this->storage->gc(0);
-        $this->assertFalse($this->storage->read('now'));
+        $this->handler->gc(0);
+        $this->assertFalse($this->handler->read('now'));
     }
 
     function testBinaryData() {
-        $this->storage->open();
-        $data = array(
+        $expected = array(
             'Valid ASCII' => "a",
             'Valid 2 Octet Sequence' => "\xc3\xb1",
             'Invalid 2 Octet Sequence' => "\xc3\x28",
@@ -150,10 +141,10 @@ class PdoStorageTest extends \PHPUnit_Framework_TestCase {
             'Valid 5 Octet Sequence (but not Unicode!)' => "\xf8\xa1\xa1\xa1\xa1",
             'Valid 6 Octet Sequence (but not Unicode!)' => "\xfc\xa1\xa1\xa1\xa1\xa1",
         );
-        $this->storage->write('foo', serialize($data));
+        $this->handler->write('foo', serialize($expected));
 
-        $unserialized = unserialize($this->storage->read('foo'));
+        $returned = unserialize($this->handler->read('foo'));
 
-        $this->assertSame($data, $unserialized);
+        $this->assertSame($expected, $returned);
     }
 }

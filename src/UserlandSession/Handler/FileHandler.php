@@ -17,6 +17,8 @@ class FileHandler implements \SessionHandlerInterface
 
     /**
      * @param string $save_path
+     *   '/path', 'N;/path', or 'N;octal-mode;/path
+     *
      * @param string $name
      *
      * @return bool
@@ -46,6 +48,9 @@ class FileHandler implements \SessionHandlerInterface
         }
 
         $this->path = rtrim($save_path, '/\\');
+        if (!is_writable($this->path)) {
+            throw new \InvalidArgumentException("\$save_path is not writable '$save_path'");
+        }
 
         return true;
     }

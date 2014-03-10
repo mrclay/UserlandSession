@@ -18,7 +18,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     /**
      * @var FileHandler
      */
-    protected $storage;
+    protected $handler;
 
     /**
      * @var vfsStreamDirectory
@@ -28,43 +28,14 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     function setUp() {
         Testing::reset();
         $this->root = vfsStream::setup();
-        $this->storage = new FileHandler('name', array(
-            'path' => vfsStream::url('root'),
-            'flock' => false,
-        ));
-        $this->sess = new Session($this->storage);
+        $this->handler = new FileHandler(false);
+        $this->sess = new Session($this->handler, 'name', $this->root->url());
     }
 
     function tearDown() {
         // necessary to avoid warnings due to vfsStream
         $this->sess = null;
         Testing::reset();
-    }
-
-    function testFactory() {
-        $names = array('ULSESS', 'ULSESS1', 'ULSESS2');
-        $instances = array();
-
-        foreach ($names as $name) {
-            $sess = Session::factory();
-            $this->assertInstanceOf('UserlandSession\\Session', $sess);
-            $this->assertInstanceOf('UserlandSession\\Storage\\FileHandler', $sess->getHandler());
-            $this->assertSame($name, $sess->getHandler()->getName());
-            $instances[] = $sess;
-        }
-
-        $instances = array_unique($instances, SORT_REGULAR);
-        $this->assertSame(count($names), count($instances));
-
-        $this->setExpectedException('UserlandSession\\Exception');
-        Session::factory(new FileHandler('ULSESS'));
-    }
-
-    /**
-     * @expectedException \UserlandSession\Exception
-     */
-    function testFactoryWithNativeSessionCollision() {
-        Session::factory(new FileHandler(ini_get('session.name')));
     }
 
     function testNotStarted() {
@@ -85,29 +56,26 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException \UserlandSession\Exception
+     * @expectedException \InvalidArgumentException
      */
-    function testInvalidStorage() {
-        $storage = new FileHandler('...', array(
-            'path' => vfsStream::url('root'),
-            'flock' => false,
-        ));
-        new Session($storage);
+    function testInvalidName() {
+        new Session($this->handler, '...');
     }
 
-    function testGetStorage() {
-        $this->assertSame($this->storage, $this->sess->getHandler());
+    function testGetHandler() {
+        $this->assertSame($this->handler, $this->sess->getHandler());
     }
 
     function testFixationAttack() {
         $_COOKIE['name'] = 'abc123';
         $this->sess->start();
-        $this->assertNotSame('name', $this->sess->id());
+        $this->assertNotSame('abc123', $this->sess->id());
     }
 
     function testSessionSniffing() {
-        $this->storage->write('abcde', 'notSerialization');
-        $this->storage->write('12345', serialize(array('foo' => 'bar')));
+        $this->handler->open($this->root->url(), 'name');
+        $this->handler->write('abcde', 'notSerialization');
+        $this->handler->write('12345', serialize(array('foo' => 'bar')));
 
         $cookieValues = array(
             // cookie value        sniffed ID  likely exists  data
@@ -119,7 +87,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
             array('12345',         '12345',    true,          array('foo' => 'bar')),
         );
 
-        foreach ($cookieValues as $arr) {
+        foreach ($cookieValues as $i => $arr) {
             list($cookieId, $id, $likely, $data) = $arr;
 
             unset($_COOKIE['name']);
@@ -127,8 +95,8 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
                 $_COOKIE['name'] = $cookieId;
             }
 
-            $this->assertSame($id, $this->sess->getIdFromCookie());
-            $this->assertSame($likely, $this->sess->sessionLikelyExists());
+            $this->assertSame($id, $this->sess->getIdFromCookie(), "fail iteration $i");
+            $this->assertSame($likely, $this->sess->sessionLikelyExists(), "fail iteration $i");
 
             if ($likely) {
                 $this->sess->start();
@@ -145,8 +113,6 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
 
                 $sessId = $this->sess->id();
 
-                // @todo Why the WARNING from vfsStreamWrapper::open_stream, yet it writes the file correctly?
-                // And why don't we get that warning in the FileHandler test?
                 $this->sess->writeClose();
 
                 $this->assertTrue((bool)file_get_contents($this->root->getChild("name_$sessId")->url()));
@@ -154,7 +120,8 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         }
     }
 
-    function testDefaultStartHeaders() {
+    function testStartHeadersNoCache() {
+        // no cache is default
         $this->sess->start();
 
         $cookie = array (
@@ -284,21 +251,30 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     /**
      * @return Session
      */
-    protected function getSessionWithStorageMock() {
-        $storage = $this->getMockBuilder('\\UserlandSession\\Storage\\FileHandler')
+    protected function getSessionWithHandlerMock() {
+        $handler = $this->getMockBuilder('\\UserlandSession\\Handler\\FileHandler')
             ->disableOriginalConstructor()
             ->getMock();
-        $storage->expects($this->any())
-            ->method('getName')
-            ->will($this->returnValue('name'));
-        $storage->expects($this->any())
+        $handler->expects($this->any())
             ->method('write')
             ->will($this->returnValue(true));
-        return new Session($storage);
+        return new Session($handler, 'name', $this->root->url());
     }
 
-    function testGcCalled() {
-        $sess = $this->getSessionWithStorageMock();
+    function testStartOpensHandler() {
+        $sess = $this->getSessionWithHandlerMock();
+        $storage = $sess->getHandler();
+        /* @var \PHPUnit_Framework_MockObject_MockObject $storage */
+
+        $storage->expects($this->once())
+            ->method('open')
+            ->with($this->root->url(), 'name')
+            ->will($this->returnValue(true));
+        $sess->start();
+    }
+
+    function testStartWithGc() {
+        $sess = $this->getSessionWithHandlerMock();
         $storage = $sess->getHandler();
         /* @var \PHPUnit_Framework_MockObject_MockObject $storage */
         $storage->expects($this->once())
@@ -313,8 +289,8 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         $sess->start();
     }
 
-    function testGcNotCalled() {
-        $sess = $this->getSessionWithStorageMock();
+    function testStartWithoutGc() {
+        $sess = $this->getSessionWithHandlerMock();
         $storage = $sess->getHandler();
         /* @var \PHPUnit_Framework_MockObject_MockObject $storage */
         $storage->expects($this->never())
@@ -330,7 +306,6 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
 
     function testWriteClose() {
         // check saves data
-        $this->assertFalse($this->root->hasChildren());
         $this->sess->start();
         $id = $this->sess->id();
         $this->sess->writeClose();
@@ -340,7 +315,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     }
 
     function testWriteCloseClosesStorage() {
-        $sess = $this->getSessionWithStorageMock();
+        $sess = $this->getSessionWithHandlerMock();
         $storage = $sess->getHandler();
         /* @var \PHPUnit_Framework_MockObject_MockObject $storage */
         $sess->start();
@@ -357,8 +332,9 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         $this->sess->start();
         // after start
         $this->assertSame('abcdef', $this->sess->id());
-        $this->assertSame('abcdef', $this->sess->id('bcdefg'));
-        $this->sess->writeClose();
+
+        $this->setExpectedException('UserlandSession\\Exception');
+        $this->sess->id('bcdefg');
     }
 
     function testRegenerateId() {
@@ -408,7 +384,9 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
 
     function testDestroy() {
         // default leaves cookie
-        $this->sess->getHandler()->write('abcdef', serialize(array('foo' => 'bar')));
+
+        // prepopulate session
+        file_put_contents($this->root->url() . '/name_abcdef', serialize(array('foo' => 'bar')));
         $_COOKIE['name'] = 'abcdef';
         $this->sess->start();
         $this->sess->destroy();
@@ -438,7 +416,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     }
 
     function testDestructorCallsWriteClose() {
-        $sess = $this->getSessionWithStorageMock();
+        $sess = $this->getSessionWithHandlerMock();
         $storage = $sess->getHandler();
         /* @var \PHPUnit_Framework_MockObject_MockObject $storage */
         $sess->start();
