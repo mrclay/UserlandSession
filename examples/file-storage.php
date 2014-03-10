@@ -13,11 +13,8 @@ $sess = (require __DIR__ . '/../scripts/get_file_session.php');
 
 $sess->start();
 
-if (isset($sess->data['i'])) {
-    $sess->data['i']++;
-} else {
-    $sess->data['i'] = 0;
-}
+// increment i
+$sess->set('i', $sess->get('i', 0) + 1);
 
 header('Content-Type: text/html;charset=utf-8');
 echo $sess->data['i'];

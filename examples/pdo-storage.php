@@ -1,9 +1,12 @@
 <?php
 
+use UserlandSession\Session;
+use UserlandSession\Storage\PdoStorage;
+
 require __DIR__ . '/../autoload.php';
 
 // you can have the storage class open the PDO connection...
-$storage = new \UserlandSession\Storage\PdoStorage('ULSESS', array(
+$storage = new PdoStorage('ULSESS', array(
     'dsn' => "mysql:host=localhost;dbname=ulsess;charset=UTF8",
     'username' => 'user_ulsess',
     'password' => '7vvv3SDjh2LLRPZ6',
@@ -18,15 +21,12 @@ $storage = new \UserlandSession\Storage\PdoStorage('ULSESS', array(
 //));
 //
 
-$sess = new \UserlandSession\Session($storage);
+$sess = new Session($storage);
 
 $sess->start();
 
-if (isset($sess->data['i'])) {
-    $sess->data['i']++;
-} else {
-    $sess->data['i'] = 0;
-}
+// increment i
+$sess->set('i', $sess->get('i', 0) + 1);
 
 // test valid/invalid strings. http://www.php.net/manual/en/reference.pcre.pattern.modifiers.php#54805
 $examples = array(

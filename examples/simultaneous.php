@@ -8,6 +8,10 @@ use UserlandSession\Storage\FileStorage;
 
 require __DIR__ . '/../autoload.php';
 
+$incrementI = function (Session $sess) {
+    $sess->set('i', $sess->get('i', 0) + 1);
+};
+
 $msgs = array();
 
 $sess1 = Session::factory();
@@ -21,11 +25,9 @@ $sess1Storage = $sess1->getStorage();
 $msgs['sess1']['name'] = $sess1Storage->getName();
 $msgs['sess1']['path'] = $sess1Storage->getPath();
 $msgs['sess1']['id'] = $sess1->id();
-if (isset($sess1->data['i'])) {
-    $sess1->data['i']++;
-} else {
-    $sess1->data['i'] = 0;
-}
+
+$sess1->set('i', $sess1->get('i', 0) + 1);
+
 $msgs['sess1']['counter'] = $sess1->data['i'];
 
 
@@ -36,7 +38,7 @@ $msgs['native']['id'] = session_id();
 if (isset($_SESSION['i'])) {
     $_SESSION['i']++;
 } else {
-    $_SESSION['i'] = 20;
+    $_SESSION['i'] = 21;
 }
 $msgs['native']['counter'] = $_SESSION['i'];
 
@@ -51,11 +53,9 @@ $sess2Storage = $sess2->getStorage();
 $msgs['sess2']['name'] = $sess2Storage->getName();
 $msgs['sess2']['path'] = $sess2Storage->getPath();
 $msgs['sess2']['id'] = $sess2->id();
-if (isset($sess2->data['i'])) {
-    $sess2->data['i']++;
-} else {
-    $sess2->data['i'] = 10;
-}
+
+$sess2->set('i', $sess2->get('i', 10) + 1);
+
 $msgs['sess2']['counter'] = $sess2->data['i'];
 
 
