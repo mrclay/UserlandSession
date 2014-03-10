@@ -9,7 +9,7 @@ branches:
     - master
 
 before_script:
-  - composer self-update
+  - mysql -e 'create database ulsess;'
   - composer install
 
 script: phpunit

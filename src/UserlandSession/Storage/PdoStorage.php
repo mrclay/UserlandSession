@@ -81,7 +81,7 @@ class PdoStorage implements StorageInterface
      */
     public function close()
     {
-
+        return true;
     }
 
     /**

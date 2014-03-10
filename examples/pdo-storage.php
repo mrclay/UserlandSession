@@ -6,11 +6,12 @@ use UserlandSession\Storage\PdoStorage;
 require __DIR__ . '/../autoload.php';
 
 // you can have the storage class open the PDO connection...
+$params = (require __DIR__ . '/../tests/db_params.php');
 $storage = new PdoStorage('ULSESS', array(
-    'dsn' => "mysql:host=localhost;dbname=ulsess;charset=UTF8",
-    'username' => 'user_ulsess',
-    'password' => '7vvv3SDjh2LLRPZ6',
-    'table' => 'userland_sessions',
+    'table' => $params['table'],
+    'dsn' => "{$params['driver']}:host={$params['host']};dbname={$params['dbname']};charset=UTF8",
+    'username' => $params['username'],
+    'password' => $params['password'],
 ));
 
 // // ...or you can pass it in.

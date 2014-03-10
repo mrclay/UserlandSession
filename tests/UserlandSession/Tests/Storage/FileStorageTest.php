@@ -4,6 +4,7 @@ namespace UserlandSession\Tests\Storage;
 
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
+use UserlandSession\Session;
 use UserlandSession\Storage\FileStorage;
 use UserlandSession\Testing;
 
@@ -17,12 +18,12 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
     /**
      * @var FileStorage
      */
-    protected $fs;
+    protected $storage;
 
     function setUp() {
         Testing::reset();
         $this->root = vfsStream::setup();
-        $this->fs = new FileStorage('name', array(
+        $this->storage = new FileStorage('name', array(
             'path' => vfsStream::url('root'),
             'flock' => false,
         ));
@@ -36,62 +37,62 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
         ini_set('session.save_path', '5;/tmp/');
         $obj = new FileStorage();
 
-        $this->assertSame('name', $obj->getName());
+        $this->assertSame(Session::DEFAULT_SESSION_NAME, $obj->getName());
         $this->assertSame('/tmp', $obj->getPath());
     }
 
     function testSetPath() {
-        $this->assertSame('vfs://root', $this->fs->getPath());
+        $this->assertSame('vfs://root', $this->storage->getPath());
     }
 
     function testOpen() {
-        $this->assertTrue($this->fs->open());
+        $this->assertTrue($this->storage->open());
     }
 
     function testClose() {
-        $this->assertTrue($this->fs->close());
+        $this->assertTrue($this->storage->close());
     }
 
     function testReadWrite() {
-        $this->assertFalse($this->fs->read('foo'));
+        $this->assertFalse($this->storage->read('foo'));
         $filename = 'name_foo';
         $this->assertFalse($this->root->hasChild($filename));
 
-        $this->fs->write('foo', 'bar');
-        $this->assertSame('bar', $this->fs->read('foo'));
+        $this->storage->write('foo', 'bar');
+        $this->assertSame('bar', $this->storage->read('foo'));
         $this->assertTrue($this->root->hasChild($filename));
     }
 
     function testDestroy() {
-        $this->fs->write('foo', 'bar');
+        $this->storage->write('foo', 'bar');
         $filename = 'name_foo';
 
-        $this->assertFalse($this->fs->destroy('goo'));
-        $this->assertTrue($this->fs->destroy('foo'));
-        $this->assertFalse($this->fs->read('foo'));
+        $this->assertFalse($this->storage->destroy('goo'));
+        $this->assertTrue($this->storage->destroy('foo'));
+        $this->assertFalse($this->storage->read('foo'));
         $this->assertFalse($this->root->hasChild($filename));
     }
 
     function testGc() {
-        $this->fs->write('60mago', 'bar');
-        $this->fs->write('30mago', 'bar');
-        $this->fs->write('now', 'bar');
+        $this->storage->write('60mago', 'bar');
+        $this->storage->write('30mago', 'bar');
+        $this->storage->write('now', 'bar');
 
         $this->touchSessionFile('60mago', -3600);
         $this->touchSessionFile('30mago', -1800);
 
-        $this->fs->gc(3000);
-        $this->assertFalse($this->fs->read('60mago'));
-        $this->assertSame('bar', $this->fs->read('30mago'));
-        $this->assertSame('bar', $this->fs->read('now'));
+        $this->storage->gc(3000);
+        $this->assertFalse($this->storage->read('60mago'));
+        $this->assertSame('bar', $this->storage->read('30mago'));
+        $this->assertSame('bar', $this->storage->read('now'));
 
-        $this->fs->gc(900);
-        $this->assertFalse($this->fs->read('30mago'));
-        $this->assertSame('bar', $this->fs->read('now'));
+        $this->storage->gc(900);
+        $this->assertFalse($this->storage->read('30mago'));
+        $this->assertSame('bar', $this->storage->read('now'));
 
         Testing::getInstance()->timeOffset = 30;
-        $this->fs->gc(0);
-        $this->assertFalse($this->fs->read('now'));
+        $this->storage->gc(0);
+        $this->assertFalse($this->storage->read('now'));
     }
 
     /**
@@ -109,7 +110,7 @@ class FileStorageTest extends \PHPUnit_Framework_TestCase {
 
     protected function touchSessionFile($id, $time = 0) {
         $time = ($time > 0) ? $time : (\time() + $time);
-        $filename = $this->fs->getPath() . "/" . $this->fs->getName() . "_$id";
+        $filename = $this->storage->getPath() . "/" . $this->storage->getName() . "_$id";
         touch($filename, $time);
         clearstatcache();
     }
