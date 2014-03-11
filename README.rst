@@ -104,6 +104,13 @@ Simpler cookie removal:
     // or specify true when destroying the session
     $session->destroy(true);
 
+Using PHP 5.4-style session handler objects in PHP 5.3
+
+.. code-block:: php
+
+    UserlandSession\Util\Php53Adapter::setSaveHandler(new FileHandler());
+    session_start();
+
 License
 -------
 
