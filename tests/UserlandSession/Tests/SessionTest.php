@@ -6,7 +6,7 @@ use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 use UserlandSession\Session;
 use UserlandSession\Handler\FileHandler;
-use UserlandSession\Testing;
+use UserlandSession\BuiltIns;
 
 class SessionTest extends \PHPUnit_Framework_TestCase {
 
@@ -26,7 +26,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     protected $root;
 
     function setUp() {
-        Testing::reset();
+        BuiltIns::reset();
         $this->root = vfsStream::setup();
         $this->handler = new FileHandler(false);
         $this->sess = new Session($this->handler, 'name', $this->root->url());
@@ -35,7 +35,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     function tearDown() {
         // necessary to avoid warnings due to vfsStream
         $this->sess = null;
-        Testing::reset();
+        BuiltIns::reset();
     }
 
     function testNotStarted() {
@@ -46,7 +46,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     }
 
     function testCantStart() {
-        Testing::getInstance()->headers_sent = true;
+        BuiltIns::getInstance()->headers_sent = true;
         $this->assertFalse($this->sess->start());
     }
 
@@ -138,12 +138,12 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
             1 => 'Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0',
             2 => 'Pragma: no-cache',
         );
-        $this->assertSame($cookie, Testing::getInstance()->cookiesSet[0]);
-        $this->assertSame($headers, Testing::getInstance()->headersSet);
+        $this->assertSame($cookie, BuiltIns::getInstance()->cookiesSet[0]);
+        $this->assertSame($headers, BuiltIns::getInstance()->headersSet);
     }
 
     function testStartHeadersWithPublicCache() {
-        Testing::getInstance()->fixedTime = 96400;
+        BuiltIns::getInstance()->fixedTime = 96400;
         $this->sess->cache_limiter = Session::CACHE_LIMITER_PUBLIC;
         $this->sess->start();
 
@@ -162,13 +162,13 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
             'secure' => false,
             'httponly' => false,
         );
-        $this->assertSame($cookie, Testing::getInstance()->cookiesSet[0]);
-        $this->assertSame($headers, Testing::getInstance()->headersSet);
+        $this->assertSame($cookie, BuiltIns::getInstance()->cookiesSet[0]);
+        $this->assertSame($headers, BuiltIns::getInstance()->headersSet);
 
     }
 
     function testStartHeaderPrivateNoExpire() {
-        Testing::getInstance()->fixedTime = 96400;
+        BuiltIns::getInstance()->fixedTime = 96400;
         $this->sess->cache_limiter = Session::CACHE_LIMITER_PRIVATE_NO_EXPIRE;
         $this->sess->start();
 
@@ -186,8 +186,8 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
             'secure' => false,
             'httponly' => false,
         );
-        $this->assertSame($cookie, Testing::getInstance()->cookiesSet[0]);
-        $this->assertSame($headers, Testing::getInstance()->headersSet);
+        $this->assertSame($cookie, BuiltIns::getInstance()->cookiesSet[0]);
+        $this->assertSame($headers, BuiltIns::getInstance()->headersSet);
     }
 
     function testStartHeaderPrivate() {
@@ -209,15 +209,15 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
             'secure' => false,
             'httponly' => false,
         );
-        $this->assertSame($cookie, Testing::getInstance()->cookiesSet[0]);
-        $this->assertSame($headers, Testing::getInstance()->headersSet);
+        $this->assertSame($cookie, BuiltIns::getInstance()->cookiesSet[0]);
+        $this->assertSame($headers, BuiltIns::getInstance()->headersSet);
     }
 
     function testStartHeaderNoCacheLimiting() {
         $this->sess->cache_limiter = Session::CACHE_LIMITER_NONE;
 
         $this->sess->cookie_lifetime = 400;
-        Testing::getInstance()->fixedTime = 86400;
+        BuiltIns::getInstance()->fixedTime = 86400;
 
         $this->sess->start();
 
@@ -231,8 +231,8 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
             'secure' => false,
             'httponly' => false,
         );
-        $this->assertSame($cookie, Testing::getInstance()->cookiesSet[0]);
-        $this->assertSame($headers, Testing::getInstance()->headersSet);
+        $this->assertSame($cookie, BuiltIns::getInstance()->cookiesSet[0]);
+        $this->assertSame($headers, BuiltIns::getInstance()->headersSet);
     }
 
     function testStartWithExistingSessionDoesntSetCookie() {
@@ -241,11 +241,11 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         $this->sess->data['foo'] = 'bar';
         $this->sess->writeClose();
 
-        Testing::reset();
+        BuiltIns::reset();
         $_COOKIE['name'] = $id;
         $this->sess->start();
 
-        $this->assertEmpty(Testing::getInstance()->cookiesSet);
+        $this->assertEmpty(BuiltIns::getInstance()->cookiesSet);
     }
 
     /**
@@ -284,7 +284,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
 
         $sess->gc_probability = 4;
         $sess->gc_divisor = 50;
-        Testing::getInstance()->rand_output["1|50"] = 3;
+        BuiltIns::getInstance()->rand_output["1|50"] = 3;
 
         $sess->start();
     }
@@ -299,7 +299,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
 
         $sess->gc_probability = 4;
         $sess->gc_divisor = 50;
-        Testing::getInstance()->rand_output["1|50"] = 25;
+        BuiltIns::getInstance()->rand_output["1|50"] = 25;
 
         $sess->start();
     }
@@ -350,11 +350,11 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         $this->sess->writeClose();
 
         // restart
-        Testing::reset();
+        BuiltIns::reset();
         $_COOKIE['name'] = $id1;
         $this->sess->start();
 
-        Testing::getInstance()->fixedTime = 96400;
+        BuiltIns::getInstance()->fixedTime = 96400;
         $this->assertTrue($this->sess->regenerateId());
         $id2 = $this->sess->id();
         $this->assertNotSame($id1, $id2);
@@ -368,7 +368,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
             'secure' => false,
             'httponly' => false,
         );
-        $this->assertSame($cookie, Testing::getInstance()->cookiesSet[0]);
+        $this->assertSame($cookie, BuiltIns::getInstance()->cookiesSet[0]);
 
         // by default leaves old sess storage
         $this->assertTrue((bool)$this->sess->getHandler()->read($id1));
@@ -391,7 +391,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         $this->sess->start();
         $this->sess->destroy();
         $this->assertFalse($this->sess->getHandler()->read('abcdef'));
-        $this->assertSame(array(), Testing::getInstance()->cookiesSet);
+        $this->assertSame(array(), BuiltIns::getInstance()->cookiesSet);
 
         // now test destroy with true
         //
@@ -399,7 +399,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         $_COOKIE['name'] = 'abcdef';
         $this->sess->start();
 
-        Testing::getInstance()->fixedTime = 96400;
+        BuiltIns::getInstance()->fixedTime = 96400;
         $this->sess->destroy(true);
         $this->assertFalse($this->sess->getHandler()->read('abcdef'));
         // removed cookie
@@ -412,7 +412,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
             'secure' => false,
             'httponly' => false,
         );
-        $this->assertSame($cookie, Testing::getInstance()->cookiesSet[0]);
+        $this->assertSame($cookie, BuiltIns::getInstance()->cookiesSet[0]);
     }
 
     function testDestructorCallsWriteClose() {
@@ -457,7 +457,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     function testRemoveCookie() {
         $this->sess->cookie_domain = 'example.com';
 
-        Testing::getInstance()->fixedTime = 96400;
+        BuiltIns::getInstance()->fixedTime = 96400;
         $this->sess->removeCookie();
 
         $cookie = array (
@@ -469,7 +469,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
             'secure' => false,
             'httponly' => false,
         );
-        $this->assertSame($cookie, Testing::getInstance()->cookiesSet[0]);
+        $this->assertSame($cookie, BuiltIns::getInstance()->cookiesSet[0]);
     }
 
     function testGmtFormat() {

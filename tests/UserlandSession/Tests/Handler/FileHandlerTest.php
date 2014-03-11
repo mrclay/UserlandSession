@@ -6,7 +6,7 @@ use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 use UserlandSession\Session;
 use UserlandSession\Handler\FileHandler;
-use UserlandSession\Testing;
+use UserlandSession\BuiltIns;
 
 class FileHandlerTest extends \PHPUnit_Framework_TestCase {
 
@@ -21,14 +21,14 @@ class FileHandlerTest extends \PHPUnit_Framework_TestCase {
     protected $handler;
 
     function setUp() {
-        Testing::reset();
+        BuiltIns::reset();
         $this->root = vfsStream::setup();
         $this->handler = new FileHandler(false);
         $this->handler->open($this->root->url(), 'name');
     }
 
     function tearDown() {
-        Testing::reset();
+        BuiltIns::reset();
     }
 
     function testOpen() {
@@ -108,7 +108,7 @@ class FileHandlerTest extends \PHPUnit_Framework_TestCase {
         $this->assertFalse($this->handler->read('30mago'));
         $this->assertSame('bar', $this->handler->read('now'));
 
-        Testing::getInstance()->timeOffset = 30;
+        BuiltIns::getInstance()->timeOffset = 30;
         $this->handler->gc(0);
         $this->assertFalse($this->handler->read('now'));
     }

@@ -3,7 +3,7 @@
 namespace UserlandSession\Tests\Storage;
 
 use UserlandSession\Handler\PdoHandler;
-use UserlandSession\Testing;
+use UserlandSession\BuiltIns;
 
 class PdoHandlerTest extends \PHPUnit_Framework_TestCase {
 
@@ -23,7 +23,7 @@ class PdoHandlerTest extends \PHPUnit_Framework_TestCase {
     protected $pdo;
 
     function setUp() {
-        Testing::reset();
+        BuiltIns::reset();
 
         $this->params = (require __DIR__ . '/../../../db_params.php');
 
@@ -42,7 +42,7 @@ class PdoHandlerTest extends \PHPUnit_Framework_TestCase {
 
     function tearDown() {
         $this->pdo->query("TRUNCATE TABLE `{$this->params['table']}`");
-        Testing::reset();
+        BuiltIns::reset();
     }
 
     function testParamsConstructor() {
@@ -102,13 +102,13 @@ class PdoHandlerTest extends \PHPUnit_Framework_TestCase {
     }
 
     function testGc() {
-        Testing::getInstance()->timeOffset = -3600;
+        BuiltIns::getInstance()->timeOffset = -3600;
         $this->handler->write('60mago', 'bar');
 
-        Testing::getInstance()->timeOffset = -1800;
+        BuiltIns::getInstance()->timeOffset = -1800;
         $this->handler->write('30mago', 'bar');
 
-        Testing::getInstance()->timeOffset = 0;
+        BuiltIns::getInstance()->timeOffset = 0;
         $this->handler->write('now', 'bar');
 
         $this->handler->gc(3000);
@@ -120,7 +120,7 @@ class PdoHandlerTest extends \PHPUnit_Framework_TestCase {
         $this->assertFalse($this->handler->read('30mago'));
         $this->assertSame('bar', $this->handler->read('now'));
 
-        Testing::getInstance()->timeOffset = 30;
+        BuiltIns::getInstance()->timeOffset = 30;
         $this->handler->gc(0);
         $this->assertFalse($this->handler->read('now'));
     }

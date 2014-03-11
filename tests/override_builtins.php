@@ -1,13 +1,15 @@
 <?php
 /**
- * Overrides some native functions
+ * Here we override some built-in functions within the UserlandSession and
+ * UserlandSession\Handler namespaces, using the BuiltIns class to capture
+ * arguments and control behavior.
  */
 
 namespace UserlandSession {
 
     function setcookie($name, $value, $expire = 0, $path = null, $domain = null, $secure = false, $httponly = false)
     {
-        Testing::getInstance()->cookiesSet[] = array(
+        BuiltIns::getInstance()->cookiesSet[] = array(
             'name' => $name,
             'value' => $value,
             'expire' => $expire,
@@ -21,12 +23,12 @@ namespace UserlandSession {
 
     function header($string, $replace = null, $http_response_code = null)
     {
-        Testing::getInstance()->headersSet[] = $string;
+        BuiltIns::getInstance()->headersSet[] = $string;
     }
 
     function headers_sent(&$file = null, &$line = null)
     {
-        $testing = Testing::getInstance();
+        $testing = BuiltIns::getInstance();
 
         $return = $testing->headers_sent;
         if ($return) {
@@ -38,7 +40,7 @@ namespace UserlandSession {
 
     function time()
     {
-        $testing = Testing::getInstance();
+        $testing = BuiltIns::getInstance();
 
         if ($testing->fixedTime) {
             return $testing->fixedTime;
@@ -50,7 +52,7 @@ namespace UserlandSession {
         if ($max === null) {
             $max = mt_getrandmax();
         }
-        return Testing::getInstance()->mt_rand($min, $max);
+        return BuiltIns::getInstance()->mt_rand($min, $max);
     }
 }
 
