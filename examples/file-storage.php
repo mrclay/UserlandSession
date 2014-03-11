@@ -1,8 +1,6 @@
 <?php
 
 use UserlandSession\Session;
-use UserlandSession\Handler\FileHandler;
-use UserlandSession\SessionBuilder;
 
 // store data in directory specified by ini_get('session.save_path')
 $sess = (require __DIR__ . '/../scripts/get_file_session.php');

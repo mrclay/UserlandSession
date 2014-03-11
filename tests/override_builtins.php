@@ -28,7 +28,7 @@ namespace UserlandSession {
     /**
      * Captures the string argument in BuiltIns::headersSet. No side-effects
      */
-    function header($string, $replace = null, $http_response_code = null)
+    function header($string)
     {
         BuiltIns::getInstance()->headersSet[] = $string;
     }

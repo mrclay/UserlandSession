@@ -6,8 +6,6 @@
  * @return \UserlandSession\Session
  */
 
-use UserlandSession\Handler\FileHandler;
-use UserlandSession\Session;
 use UserlandSession\SessionBuilder;
 
 require_once __DIR__ . '/../autoload.php';

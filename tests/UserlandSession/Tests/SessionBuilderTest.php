@@ -98,6 +98,7 @@ class SessionBuilderTest extends \PHPUnit_Framework_TestCase {
         $p = (require __DIR__ . '/../../db_params.php');
         $pdo = new \PDO($p['dsn'], $p['username'], $p['password']);
 
+        /** @noinspection PhpParamsInspection */
         $sess = $this->builder
             ->setPdo($pdo)
             ->setTable('foo')

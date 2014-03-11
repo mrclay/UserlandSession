@@ -258,6 +258,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         $handler->expects($this->any())
             ->method('write')
             ->will($this->returnValue(true));
+        /** @noinspection PhpParamsInspection */
         return new Session($handler, 'name', $this->root->url());
     }
 

@@ -1,7 +1,5 @@
 <?php
 
-use UserlandSession\Session;
-use UserlandSession\Handler\PdoHandler;
 use UserlandSession\SessionBuilder;
 
 require __DIR__ . '/../autoload.php';

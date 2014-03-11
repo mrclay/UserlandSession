@@ -4,7 +4,6 @@ namespace UserlandSession\Tests\Storage;
 
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
-use UserlandSession\Session;
 use UserlandSession\Handler\FileHandler;
 use UserlandSession\BuiltIns;
 
