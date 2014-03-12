@@ -18,6 +18,8 @@ $incrementI = function (Session $sess) {
 
 $msgs = array();
 
+// First session: UserlandSession //////////////////////////////////////////////////////////////////
+
 $sess1 = SessionBuilder::instance()->setName('ULSESS1')->setSavePath($path)->build();
 $sess1->cache_limiter = Session::CACHE_LIMITER_NONE;
 $sess1->gc_divisor = 3;
@@ -30,7 +32,10 @@ $sess1->set('i', $sess1->get('i', 0) + 1);
 
 $msgs['sess1']['counter'] = $sess1->data['i'];
 
-Php53Adapter::setSaveHandler(new FileHandler());
+
+// Second session: Native PHP Session //////////////////////////////////////////////////////////////
+
+Php53Adapter::setSaveHandler(new FileHandler()); // custom save handler
 session_save_path($path);
 session_start();
 $msgs['native']['name'] = session_name();
@@ -42,6 +47,8 @@ if (isset($_SESSION['i'])) {
 }
 $msgs['native']['counter'] = $_SESSION['i'];
 
+
+// Third session: UserlandSession //////////////////////////////////////////////////////////////////
 
 $sess2 = SessionBuilder::instance()->setName('ULSESS2')->setSavePath($path)->build();
 $sess2->cache_limiter = Session::CACHE_LIMITER_NONE;
