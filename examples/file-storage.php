@@ -1,10 +1,8 @@
 <?php
 
-use UserlandSession\Session;
-
 // store data in directory specified by ini_get('session.save_path')
 $sess = (require __DIR__ . '/../scripts/get_file_session.php');
-/* @var Session $sess */
+/* @var UserlandSession\Session $sess */
 
 // // or specify the path
 //

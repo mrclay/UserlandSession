@@ -140,7 +140,8 @@ class PdoHandler implements \SessionHandlerInterface
             DELETE FROM `{$this->options['table']}`
             WHERE `time` < " . (int)(time() - $maxLifetime) . "
         ";
-        return (bool)$this->pdo->exec($sql);
+        $this->pdo->exec($sql);
+        return true;
     }
 
     /**

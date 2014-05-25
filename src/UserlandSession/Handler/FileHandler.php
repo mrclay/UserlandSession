@@ -151,8 +151,13 @@ class FileHandler implements \SessionHandlerInterface
             }
         }
         $d->close();
+        return true;
     }
 
+    /**
+     * @param string $id
+     * @return string
+     */
     protected function getFilePath($id)
     {
         return $this->path . DIRECTORY_SEPARATOR . $this->name . '_' . $id;
