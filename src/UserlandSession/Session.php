@@ -281,13 +281,19 @@ class Session
      * Start the session.
      *
      * @return bool success
+     * @throws Exception
      */
     public function start()
     {
         if (headers_sent() || $this->id) {
             return false;
         }
+
+        if ($this->data !== null) {
+            throw new Exception('The property "data" cannot be set until the session is started.');
+        }
         $this->data = array();
+
         if ($this->requestedId) {
             $this->setCookie($this->name, $this->requestedId);
             $this->id = $this->requestedId;
@@ -305,9 +311,7 @@ class Session
             $this->handler->gc($this->gc_maxlifetime);
         }
 
-        if ($this->requestedId) {
-            // don't require data to exist
-        } else {
+        if (!$this->requestedId) {
             // try data fetch
             if (!$this->loadData()) {
                 // unlike the native PHP session, we don't let users choose their own
@@ -319,35 +323,8 @@ class Session
         }
         $this->requestedId = null;
 
-        // send optional cache limiter
-        // this is actual session behavior rather than what's documented.
-        $lastModified = self::formatAsGmt(filemtime($_SERVER['SCRIPT_FILENAME']));
+        $this->sendStartHeaders();
 
-        $ce = $this->cache_expire;
-        switch ($this->cache_limiter) {
-            case self::CACHE_LIMITER_PUBLIC:
-                header('Expires: ' . self::formatAsGmt(time() + $ce));
-                header("Cache-Control: public, max-age=$ce");
-                header('Last-Modified: ' . $lastModified);
-                break;
-            case self::CACHE_LIMITER_PRIVATE_NO_EXPIRE:
-                header("Cache-Control: private, max-age=$ce, pre-check=$ce");
-                header('Last-Modified: ' . $lastModified);
-                break;
-            case self::CACHE_LIMITER_PRIVATE:
-                header('Expires: Thu, 19 Nov 1981 08:52:00 GMT');
-                header("Cache-Control: private, max-age=$ce, pre-check=$ce");
-                header('Last-Modified: ' . $lastModified);
-                break;
-            case self::CACHE_LIMITER_NOCACHE:
-                header('Expires: Thu, 19 Nov 1981 08:52:00 GMT');
-                header('Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
-                header('Pragma: no-cache');
-                break;
-            case self::CACHE_LIMITER_NONE:
-                // send no cache headers, please
-                break;
-        }
         return true;
     }
 
@@ -393,6 +370,7 @@ class Session
             $this->handler->destroy($this->id);
             $this->handler->close();
             $this->id = '';
+            $this->data = null;
             return true;
         }
         return false;
@@ -493,6 +471,42 @@ class Session
             (bool)$this->cookie_secure,
             (bool)$this->cookie_httponly
         );
+    }
+
+    /**
+     * Send headers based on cache_limiter and cache_expire properties
+     */
+    protected function sendStartHeaders()
+    {
+        // send optional cache limiter
+        // this is actual session behavior rather than what's documented.
+        $lastModified = self::formatAsGmt(filemtime($_SERVER['SCRIPT_FILENAME']));
+
+        $ce = $this->cache_expire;
+        switch ($this->cache_limiter) {
+            case self::CACHE_LIMITER_PUBLIC:
+                header('Expires: ' . self::formatAsGmt(time() + $ce));
+                header("Cache-Control: public, max-age=$ce");
+                header('Last-Modified: ' . $lastModified);
+                break;
+            case self::CACHE_LIMITER_PRIVATE_NO_EXPIRE:
+                header("Cache-Control: private, max-age=$ce, pre-check=$ce");
+                header('Last-Modified: ' . $lastModified);
+                break;
+            case self::CACHE_LIMITER_PRIVATE:
+                header('Expires: Thu, 19 Nov 1981 08:52:00 GMT');
+                header("Cache-Control: private, max-age=$ce, pre-check=$ce");
+                header('Last-Modified: ' . $lastModified);
+                break;
+            case self::CACHE_LIMITER_NOCACHE:
+                header('Expires: Thu, 19 Nov 1981 08:52:00 GMT');
+                header('Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
+                header('Pragma: no-cache');
+                break;
+            case self::CACHE_LIMITER_NONE:
+                // send no cache headers, please
+                break;
+        }
     }
 
     /**

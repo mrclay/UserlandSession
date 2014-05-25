@@ -305,6 +305,14 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         $sess->start();
     }
 
+    /**
+     * @expectedException \UserlandSession\Exception
+     */
+    function testStartComplainsIfDataPresent() {
+        $this->sess->data = array('foo' => 1);
+        $this->sess->start();
+    }
+
     function testWriteClose() {
         // check saves data
         $this->sess->start();
@@ -391,6 +399,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         $_COOKIE['name'] = 'abcdef';
         $this->sess->start();
         $this->sess->destroy();
+        $this->assertNull($this->sess->data);
         $this->assertFalse($this->sess->getHandler()->read('abcdef'));
         $this->assertSame(array(), BuiltIns::getInstance()->cookiesSet);
 
