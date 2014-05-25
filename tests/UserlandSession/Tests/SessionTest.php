@@ -485,4 +485,35 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     function testGmtFormat() {
         $this->assertSame('Fri, 02 Jan 1970 00:00:00 GMT', Session::formatAsGmt(86400));
     }
+
+    function testSerializer() {
+        $serializer = $this->getMock('\UserlandSession\Serializer\PhpSerializer');
+        $serializer->expects($this->once())
+            ->method('serialize')
+            ->with(array('foo' => 1))
+            ->will($this->returnValue('foo=1'));
+
+        $sess = new Session($this->handler, 'name', $this->root->url(), $serializer);
+        $sess->start();
+        $sess->data['foo'] = 1;
+        $id = $sess->id();
+        $sess->writeClose();
+
+        // make sure GC doesn't run
+        $sess->gc_probability = 4;
+        $sess->gc_divisor = 50;
+        BuiltIns::getInstance()->rand_output["1|50"] = 25;
+
+        $serializer = $this->getMock('\UserlandSession\Serializer\PhpSerializer');
+        $serializer->expects($this->once())
+            ->method('unserialize')
+            ->with('foo=1')
+            ->will($this->returnValue(array('foo' => 1)));
+
+        $_COOKIE['name'] = $id;
+        $sess = new Session($this->handler, 'name', $this->root->url(), $serializer);
+        $sess->start();
+
+        $this->assertEquals(array('foo' => 1), $sess->data);
+    }
 }

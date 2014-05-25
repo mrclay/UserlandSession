@@ -4,6 +4,7 @@ namespace UserlandSession;
 
 use UserlandSession\Handler\FileHandler;
 use UserlandSession\Handler\PdoHandler;
+use UserlandSession\Serializer\SerializerInterface;
 
 /**
  * Fluent API for creating sessions
@@ -13,6 +14,7 @@ class SessionBuilder
     protected $name = Session::DEFAULT_SESSION_NAME;
     protected $savePath;
     protected $handler;
+    protected $serializer;
     protected $locking = true;
     protected $table;
     protected $pdo;
@@ -118,6 +120,17 @@ class SessionBuilder
     }
 
     /**
+     * @param SerializerInterface $serializer
+     *
+     * @return $this
+     */
+    public function setSerializer(SerializerInterface $serializer)
+    {
+        $this->serializer = $serializer;
+        return $this;
+    }
+
+    /**
      * Create a new session with the appropriate storage handler
      *
      * @return Session
@@ -136,6 +149,6 @@ class SessionBuilder
         } else {
             $handler = new FileHandler($this->locking);
         }
-        return new Session($handler, $this->name, $this->savePath);
+        return new Session($handler, $this->name, $this->savePath, $this->serializer);
     }
 }

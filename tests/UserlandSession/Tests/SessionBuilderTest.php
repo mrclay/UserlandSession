@@ -4,6 +4,7 @@ namespace UserlandSession\Tests;
 
 use UserlandSession\Handler\FileHandler;
 use UserlandSession\Handler\PdoHandler;
+use UserlandSession\Serializer\PhpSerializer;
 use UserlandSession\Session;
 use UserlandSession\SessionBuilder;
 
@@ -88,6 +89,16 @@ class SessionBuilderTest extends \PHPUnit_Framework_TestCase {
         $handler = new FileHandler();
         $sess = $this->builder->setHandler($handler)->build();
         $this->assertSame($handler, $sess->getHandler());
+    }
+
+    function testSetSerializer() {
+        $serializer = $this->getMock('UserlandSession\Serializer\PhpSerializer');
+        $serializer->expects($this->once())
+            ->method('serialize');
+        $sess = $this->builder->setSerializer($serializer)->build();
+        $sess->start();
+        $sess->data['foo'] = 1;
+        $sess->writeClose();
     }
 
     function testHandlerOverridesPdo() {

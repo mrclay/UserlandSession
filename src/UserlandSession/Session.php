@@ -2,6 +2,9 @@
 
 namespace UserlandSession;
 
+use UserlandSession\Serializer\PhpSerializer;
+use UserlandSession\Serializer\SerializerInterface;
+
 /**
  * A PHP emulation of native session behavior. Other than HTTP IO (header() and
  * setcookie(), there's no global state in this implementation; you can have an active
@@ -160,24 +163,36 @@ class Session
     /**
      * Create a session.
      *
-     * @param \SessionHandlerInterface $handler The storage handler
-     * @param string $name Session name.
-     * @param string $save_path Path sent to the handler. If not specified, session_save_path() is used.
+     * @param \SessionHandlerInterface $handler    The storage handler
+     * @param string                   $name       Session name.
+     * @param string                   $save_path  Path sent to the handler. If not specified, session_save_path() is used.
+     * @param SerializerInterface      $serializer Value serializer. Uses PhpSerializer if not given
      *
      * @throws \InvalidArgumentException
      */
-    public function __construct(\SessionHandlerInterface $handler, $name = Session::DEFAULT_SESSION_NAME, $save_path = '')
-    {
+    public function __construct(
+        \SessionHandlerInterface $handler,
+        $name = Session::DEFAULT_SESSION_NAME,
+        $save_path = '',
+        SerializerInterface $serializer = null
+    ) {
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $name)) {
             throw new \InvalidArgumentException('name may contain only a-zA-Z_');
         }
         $this->name = $name;
+
         if ($handler instanceof \SessionHandler) {
             // SessionHandler's operation depends on the native session
             throw new \InvalidArgumentException('Cannot use native SessionHandler. Use UserlandSession\Handler\FileHandler');
         }
         $this->handler = $handler;
+
         $this->savePath = $save_path;
+
+        if (!$serializer) {
+            $serializer = new PhpSerializer();
+        }
+        $this->serializer = $serializer;
     }
 
     /**
@@ -435,7 +450,7 @@ class Session
     {
         $serialization = $this->handler->read($this->id);
         if (is_string($serialization)) {
-            $this->data = @unserialize($serialization);
+            $this->data = @$this->serializer->unserialize($serialization);
             if (is_array($this->data)) {
                 return true;
             }
@@ -449,7 +464,7 @@ class Session
      */
     protected function saveData()
     {
-        $strData = serialize($this->data);
+        $strData = $this->serializer->serialize($this->data);
         return $this->handler->write($this->id, $strData);
     }
 
@@ -523,6 +538,11 @@ class Session
      * @var \SessionHandlerInterface
      */
     protected $handler;
+
+    /**
+     * @var SerializerInterface
+     */
+    protected $serializer;
 
     /**
      * Active session ID, or empty if inactive
