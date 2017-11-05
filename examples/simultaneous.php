@@ -8,7 +8,7 @@ use UserlandSession\Session;
 use UserlandSession\Handler\FileHandler;
 use UserlandSession\Util\Php53Adapter;
 
-require __DIR__ . '/../autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 $path = sys_get_temp_dir();
 

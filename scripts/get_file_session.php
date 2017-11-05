@@ -8,7 +8,7 @@
 
 use UserlandSession\SessionBuilder;
 
-require_once __DIR__ . '/../autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 return call_user_func(function () {
     static $session;

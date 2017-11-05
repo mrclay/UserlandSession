@@ -2,7 +2,7 @@
 
 use UserlandSession\SessionBuilder;
 
-require __DIR__ . '/../autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 // you can have the storage class open the PDO connection...
 $params = (require __DIR__ . '/../tests/db_params.php');

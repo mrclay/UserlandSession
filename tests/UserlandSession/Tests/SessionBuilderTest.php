@@ -2,6 +2,7 @@
 
 namespace UserlandSession\Tests;
 
+use org\bovigo\vfs\vfsStream;
 use UserlandSession\Handler\FileHandler;
 use UserlandSession\Handler\PdoHandler;
 use UserlandSession\Serializer\PhpSerializer;
@@ -92,17 +93,21 @@ class SessionBuilderTest extends \PHPUnit_Framework_TestCase {
     }
 
     function testSetSerializer() {
-        $serializer = $this->getMock('UserlandSession\Serializer\PhpSerializer');
+    	$serializer = $this->getMock(PhpSerializer::class);
         $serializer->expects($this->once())
             ->method('serialize');
-        $sess = $this->builder->setSerializer($serializer)->build();
+		$sess = $this->builder
+			->setSerializer($serializer)
+			->setSavePath(vfsStream::setup()->url())
+			->setFileLocking(false)
+			->build();
         $sess->start();
         $sess->data['foo'] = 1;
         $sess->writeClose();
     }
 
     function testHandlerOverridesPdo() {
-        $handler = $this->getMockBuilder('UserlandSession\\Handler\\FileHandler')
+        $handler = $this->getMockBuilder(FileHandler::class)
             ->disableOriginalConstructor()
             ->getMock();
 
@@ -123,7 +128,7 @@ class SessionBuilderTest extends \PHPUnit_Framework_TestCase {
         $p = (require __DIR__ . '/../../db_params.php');
 
         $this->assertInstanceOf(
-            'UserlandSession\\Handler\\PdoHandler',
+            PdoHandler::class,
             $this->builder
                 ->setDbCredentials($p)
                 ->setTable('foo')
@@ -133,7 +138,7 @@ class SessionBuilderTest extends \PHPUnit_Framework_TestCase {
 
         $pdo = new \PDO($p['dsn'], $p['username'], $p['password']);
         $this->assertInstanceOf(
-            'UserlandSession\\Handler\\PdoHandler',
+        	PdoHandler::class,
             $this->builder
                 ->setPdo($pdo)
                 ->setTable('foo')
@@ -144,7 +149,7 @@ class SessionBuilderTest extends \PHPUnit_Framework_TestCase {
 
     function testDefaultIsFileHandler() {
         $this->assertInstanceOf(
-            'UserlandSession\\Handler\\FileHandler',
+        	FileHandler::class,
             $this->builder->build()->getHandler()
         );
     }

@@ -4,6 +4,8 @@ namespace UserlandSession\Tests;
 
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
+use UserlandSession\Exception;
+use UserlandSession\Serializer\PhpSerializer;
 use UserlandSession\Session;
 use UserlandSession\Handler\FileHandler;
 use UserlandSession\BuiltIns;
@@ -252,7 +254,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
      * @return Session
      */
     protected function getSessionWithHandlerMock() {
-        $handler = $this->getMockBuilder('\\UserlandSession\\Handler\\FileHandler')
+        $handler = $this->getMockBuilder(FileHandler::class)
             ->disableOriginalConstructor()
             ->getMock();
         $handler->expects($this->any())
@@ -342,7 +344,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         // after start
         $this->assertSame('abcdef', $this->sess->id());
 
-        $this->setExpectedException('UserlandSession\\Exception');
+        $this->setExpectedException(Exception::class);
         $this->sess->id('bcdefg');
     }
 
@@ -487,7 +489,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
     }
 
     function testSerializer() {
-        $serializer = $this->getMock('\UserlandSession\Serializer\PhpSerializer');
+        $serializer = $this->getMock(PhpSerializer::class);
         $serializer->expects($this->once())
             ->method('serialize')
             ->with(array('foo' => 1))
@@ -504,7 +506,7 @@ class SessionTest extends \PHPUnit_Framework_TestCase {
         $sess->gc_divisor = 50;
         BuiltIns::getInstance()->rand_output["1|50"] = 25;
 
-        $serializer = $this->getMock('\UserlandSession\Serializer\PhpSerializer');
+        $serializer = $this->getMock(PhpSerializer::class);
         $serializer->expects($this->once())
             ->method('unserialize')
             ->with('foo=1')
