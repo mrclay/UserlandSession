@@ -9,7 +9,7 @@ concurrently with--and completely independent of--existing native sessions. This
 session state across multiple PHP apps with incompatible sessions.
 
 - Loosely-coupled components that introduce no global state (except headers)
-- Uses PHP's `SessionHandlerInterface`, so you can re-use existing 3rd-party handlers, even in PHP 5.3!
+- Uses PHP's `SessionHandlerInterface`, so you can re-use existing 3rd-party handlers
 - Session data is only accessible via the object instead of a global
 
 .. code-block:: php
@@ -29,8 +29,7 @@ session state across multiple PHP apps with incompatible sessions.
 Handlers
 --------
 
-The save handler interface is PHP's `SessionHandlerInterface` (provided for PHP 5.3), and handlers
-`FileHandler` and `PdoHandler` are included.
+The save handler interface is PHP's `SessionHandlerInterface`, and handlers `FileHandler` and `PdoHandler` are included.
 
 Feel free to use your own save handler class, or use these as handlers for native sessions!
 
@@ -103,13 +102,6 @@ Simpler cookie removal:
 
     // or specify true when destroying the session
     $session->destroy(true);
-
-Using PHP 5.4-style session handler objects in PHP 5.3
-
-.. code-block:: php
-
-    UserlandSession\Util\Php53Adapter::setSaveHandler(new FileHandler());
-    session_start();
 
 License
 -------
